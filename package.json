@@ -1,0 +1,31 @@
+{
+  "name": "schachtrainer",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Adaptiver Schachtrainer: Eröffnungen, Mittelspiel, Endspiele und Partien gegen den Computer",
+  "type": "module",
+  "scripts": {
+    "prepare-engine": "node scripts/copy-engine.mjs",
+    "dev": "npm run prepare-engine && vite",
+    "build": "npm run prepare-engine && tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "mine": "node scripts/mine-puzzles.mjs 600 .mine/p1.jsonl 1"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "chessground": "^9.2.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "stockfish": "^19.0.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.3"
+  },
+  "license": "GPL-3.0-or-later"
+}
