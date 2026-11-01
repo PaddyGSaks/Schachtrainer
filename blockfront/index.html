@@ -133,7 +133,7 @@ body.touch #toasts{top:12%;font-size:14px}
     <b>WASD</b> bewegen · <b>Leertaste</b> springen · <b>Shift</b> sprinten · <b>Maus</b> umsehen<br>
     <b>Linksklick</b> schießen / Blöcke abbauen · <b>Rechtsklick</b> zielen / Block setzen<br>
     <b>R</b> nachladen · <b>G</b> Handgranate (sprengt Löcher in die Welt!) · <b>1–9 / Mausrad</b> Slot wählen<br>
-    <b>1</b> Gewehr · <b>2</b> Spitzhacke · <b>3</b> Raketenwerfer (erst in einer Truhe finden!) · <b>4–0</b> Baublöcke<br><b>E</b> Truhe öffnen / Panzer besteigen und aussteigen · Karte oben links zeigt Ziele<br><b>C / Strg</b> ducken (schwerer zu treffen, aber langsam) · <b>T</b> neu spawnen, falls etwas hängt oder buggt<br><br>
+    <b>1</b> Gewehr · <b>2</b> Spitzhacke · <b>3</b> Raketenwerfer (Nachschub in Truhen) · <b>4–0</b> Baublöcke<br><b>E</b> Truhe öffnen / Panzer besteigen und aussteigen · Karte oben links zeigt Ziele<br><b>C / Strg</b> ducken (schwerer zu treffen, aber langsam) · <b>T</b> neu spawnen, falls etwas hängt oder buggt<br><br>
     Wie in Minecraft kannst du alles abbauen und Deckung bauen. Feinde hören Schüsse – bleib in Bewegung.
     Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen.
   </div>
@@ -465,7 +465,7 @@ const P={x:12.5,y:20,z:12.5,vx:0,vy:0,vz:0,w:.3,h:1.8,onGround:false,bx:false,la
 let yaw=-Math.PI*.75,pitch=0,hp=100,dead=false,locked=false,started=false,gameTime=0,kills=0,missionDone=false;
 let mag=8,reserve=40,grenades=3,reloading=0,fireCd=0,gCd=0,ads=0,adsTarget=false,kick=0,shake=0,swing=0,bobT=0,placeCd=0;
 const RELOAD=2.0,MAGSIZE=8;
-const keys={};let crouching=false,crouchToggle=false,eyeH=1.62;let hasLauncher=false,rockets=0,rocketCd=0,inTank=false,tankCd=0,smoke2=null;const joy={x:0,y:0,sprint:false};let adsToggle=false;let lmb=false,rmb=false;
+const keys={};let crouching=false,crouchToggle=false,eyeH=1.62;let hasLauncher=true,rockets=4,rocketCd=0,inTank=false,tankCd=0,smoke2=null;const joy={x:0,y:0,sprint:false};let adsToggle=false;let lmb=false,rmb=false;
 const inv={3:0,2:12,6:24,7:16,8:48,9:12,10:4};
 const slots=[{t:'rifle'},{t:'pick'},{t:'rocket'},{t:'block',id:8},{t:'block',id:6},{t:'block',id:7},{t:'block',id:9},{t:'block',id:3},{t:'block',id:2},{t:'block',id:10}];
 let sel=0;
@@ -732,7 +732,7 @@ function makeChest(x,y,z,kind){
   g.position.set(x,y,z);scene.add(g);chests.push({x,y,z,kind,opened:false,lid,t:0,g})}
 function openChest(c){c.opened=true;sfx('pick');
   if(c.kind==='launcher'){hasLauncher=true;rockets+=3;toast('RAKETENWERFER gefunden! +3 Raketen (Slot 3)');selectSlot(2)}
-  else{rockets+=4;toast(hasLauncher?'+4 Raketen':'+4 Raketen (Raketenwerfer fehlt noch)');spawnItem('med',c.x+1.2,c.y,c.z)}
+  else{rockets+=4;toast('+4 Raketen');spawnItem('med',c.x+1.2,c.y,c.z)}
   buildHotbar();for(let i=0;i<12;i++)spawnP(c.x,c.y+.7,c.z,(Math.random()-.5)*2,1+Math.random()*2,(Math.random()-.5)*2,0xffd24a,.1,.8,8)}
 function updateChests(dt){for(const c of chests)if(c.opened&&c.t<1){c.t=Math.min(1,c.t+dt*2.5);c.lid.rotation.x=-c.t*1.9}}
 // Panzer
@@ -866,7 +866,7 @@ function buildWorld(){
     trees++}
   for(let k=0;k<NCX*NCZ;k++)dirty.add(k);
   setupFlag(gB);
-  {const g=heights[HI(38,50)];fillBox(37,g+1,49,40,g+2,51,0);makeChest(38.5,g+1,50.5,'launcher');const g2=heights[HI(33,63)];makeChest(33.5,g2+1,63.5,'rockets')}
+  {const g=heights[HI(38,50)];fillBox(37,g+1,49,40,g+2,51,0);makeChest(38.5,g+1,50.5,'rockets');const g2=heights[HI(33,63)];makeChest(33.5,g2+1,63.5,'rockets')}
   buildMinimapBg();
   // Spieler
   P.x=12.5;P.z=12.5;P.y=gH(12,12)+1;
@@ -985,7 +985,7 @@ function startGame(){initAudio();
 function pauseGame(){crouchToggle=false;locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);document.getElementById('respawnBtn').classList.remove('hidden');
   document.getElementById('joybase').classList.add('hidden');menu.classList.remove('hidden');document.getElementById('mtitle').textContent='PAUSE';document.getElementById('play').textContent='WEITER'}
 function setupTouch(){
-  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (Taste E gedrückt halten, wenn du am Mast stehst).<br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>DUCKEN</b> an/aus (schwerer zu treffen, aber langsam) · <b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Gewehr, 2 Spitzhacke, 3 Raketenwerfer, 4–0 Baublöcke)<br><b>E</b> Truhe öffnen, Panzer besteigen/verlassen · die Karte oben links zeigt Flagge, Feindlager, Truhen und Panzer<br><br>Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
+  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (Taste E gedrückt halten, wenn du am Mast stehst).<br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>DUCKEN</b> an/aus (schwerer zu treffen, aber langsam) · <b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Gewehr, 2 Spitzhacke, 3 Raketenwerfer, 4–0 Baublöcke)<br><b>E</b> Truhe öffnen (Raketen-Nachschub), Panzer besteigen/verlassen · die Karte oben links zeigt Flagge, Feindlager, Truhen und Panzer<br><br>Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
   const jz=document.getElementById('joyzone'),lz=document.getElementById('lookzone'),base=document.getElementById('joybase'),knob=document.getElementById('joyknob');
   let jid=null,jx=0,jy=0,lid=null,lx=0,ly=0,lt0=0,lmv=0;const R=55;const NP={passive:false};
   jz.addEventListener('touchstart',e=>{e.preventDefault();if(jid!==null)return;const t=e.changedTouches[0];jid=t.identifier;jx=t.clientX;jy=t.clientY;
