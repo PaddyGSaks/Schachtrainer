@@ -251,22 +251,30 @@ const COUNTRIES={
     primaries:['kar98','g43','mp40','stg44','mg42','kar98_sn'],specials:['panzerschreck','panzerfaust','flame_de']},
   jp:{name:'Japan',side:'X',grenade:'Typ-97-Granate',
     uniforms:[{name:'Khaki (Heer)',uni:0x7c7340,pants:0x625b34,helm:0x6a623c},{name:'Dschungel-Grün',uni:0x5a6a3a,pants:0x4a5630,helm:0x4a5532,themes:['jungle']},{name:'Marine (Dunkelgrün)',uni:0x4e5a46,pants:0x3f4a39,helm:0x3a443a}],
-    primaries:['arisaka','type100','type99lmg','arisaka_sn'],specials:['type4','flame_jp']}};
+    primaries:['arisaka','type100','type99lmg','arisaka_sn'],specials:['type4','flame_jp']},
+  ca:{name:'Kanada',side:'A',grenade:'Mills-Granate No. 36',
+    uniforms:[{name:'Battledress (Khaki)',uni:0x80754f,pants:0x655c40,helm:0x5a5841},{name:'Fallschirmjäger (1. Kan. Fallschirmbtl.)',uni:0x5f6a45,pants:0x4f573a,helm:0x454c34},{name:'Wüsten-Khaki',uni:0xa09060,pants:0x867848,helm:0x766a46,themes:['desert']},{name:'Winter-Feldjacke',uni:0x8a8a78,pants:0x6e6e5c,helm:0x606858,themes:['winter']}],
+    primaries:['enfield','sten','bren','enfield_sn'],specials:['piat','flame_uk']},
+  pl:{name:'Polen',side:'A',grenade:'Handgranate wz. 33',
+    uniforms:[{name:'Heer (Uniform wz. 36)',uni:0x6f6e46,pants:0x585838,helm:0x555a40},{name:'Polnische Streitkräfte im Westen (Battledress)',uni:0x7a7050,pants:0x625a40,helm:0x58563e},{name:'Heimatarmee (Tarnjacke)',uni:0x5a604a,pants:0x4c4f3c,helm:0x484d3c}],
+    primaries:['mauser98','blyskawica','wz28','mauser_sn'],specials:['piat','flame_uk']}};
 const VEHICLES={
   usa:{tank:{name:'M4 Sherman',hp:400,speed:6,cd:1.8},plane:{name:'P-51 Mustang',hp:320,spd:1.1,turn:1}},
   uk:{tank:{name:'Churchill',hp:520,speed:4.8,cd:2},plane:{name:'Spitfire',hp:280,spd:1,turn:1.15}},
   ussr:{tank:{name:'T-34',hp:450,speed:6.4,cd:1.9},plane:{name:'Jak-3',hp:270,spd:1.05,turn:1.1}},
   fr:{tank:{name:'Char B1 bis',hp:480,speed:4.5,cd:2.2},plane:{name:'Dewoitine D.520',hp:260,spd:1,turn:1.05}},
   de:{tank:{name:'Panzer IV',hp:420,speed:5.8,cd:1.8},plane:{name:'Bf 109',hp:290,spd:1.05,turn:1}},
-  jp:{tank:{name:'Typ 97 Chi-Ha',hp:320,speed:5.5,cd:1.7},plane:{name:'A6M Zero',hp:230,spd:1,turn:1.2}}};
+  jp:{tank:{name:'Typ 97 Chi-Ha',hp:320,speed:5.5,cd:1.7},plane:{name:'A6M Zero',hp:230,spd:1,turn:1.2}},
+  ca:{tank:{name:'Sherman (Kanadische Armee)',hp:400,speed:6,cd:1.8},plane:{name:'Hawker Typhoon',hp:300,spd:1.05,turn:1}},
+  pl:{tank:{name:'Cromwell (1. Polnische Panzerdivision)',hp:450,speed:6.2,cd:1.9},plane:{name:'Spitfire (Staffel 303)',hp:280,spd:1,turn:1.15}}};
 const BATTLES={
-  dday:{short:'D-Day',name:'D-Day – Landung in der Normandie',date:'6. Juni 1944',year:1944,theme:'coast',variant:'beach',att:['usa','uk','fr'],def:['de'],attMode:'assault',defMode:'defense',
+  dday:{short:'D-Day',name:'D-Day – Landung in der Normandie',date:'6. Juni 1944',year:1944,theme:'coast',variant:'beach',att:['usa','uk','ca','fr','pl'],def:['de'],attMode:'assault',defMode:'defense',
     desc:'Alliierte Truppen landen an den Stränden der Normandie und stürmen den Atlantikwall.',
     attGoal:'Stürme den Strand, durchbrich die Bunkerlinie und hisse die Flagge im Küstenbunker',defGoal:'Halte den Atlantikwall gegen die Landungswellen vom Strand'},
   stalingrad:{short:'Stalingrad',name:'Schlacht um Stalingrad',date:'Aug. 1942 – Feb. 1943',year:1942,theme:'winter',variant:'ruins',att:['de'],def:['ussr'],attMode:'urban',defMode:'defense',
     desc:'Erbitterter Häuserkampf in der zerstörten Stadt an der Wolga.',
     attGoal:'Erobere das zerstörte Stadtzentrum und hisse die Flagge',defGoal:'Verteidige Stalingrad gegen den deutschen Ansturm'},
-  berlin:{short:'Berlin / Reichstag',name:'Schlacht um Berlin – Sturm auf den Reichstag',date:'April – Mai 1945',year:1945,theme:'europe',variant:'ruins',att:['ussr'],def:['de'],attMode:'urban',defMode:'defense',
+  berlin:{short:'Berlin / Reichstag',name:'Schlacht um Berlin – Sturm auf den Reichstag',date:'April – Mai 1945',year:1945,theme:'europe',variant:'ruins',att:['ussr','pl'],def:['de'],attMode:'urban',defMode:'defense',
     desc:'Die Rote Armee kämpft sich durch die Trümmer Berlins bis zum Reichstag.',
     attGoal:'Kämpfe dich durch Berlin zum Reichstag und hisse die Fahne auf dem Gebäude',defGoal:'Verteidige Berlin gegen den sowjetischen Ansturm'},
   kursk:{short:'Kursk',name:'Schlacht von Kursk',date:'Juli – August 1943',year:1943,theme:'europe',variant:'',att:['de'],def:['ussr'],attMode:'trench',defMode:'defense',
@@ -281,10 +289,10 @@ const BATTLES={
   iwojima:{short:'Iwojima',name:'Schlacht um Iwojima',date:'Feb. – März 1945',year:1945,theme:'coast',variant:'hill',att:['usa'],def:['jp'],attMode:'assault',defMode:'defense',
     desc:'Amerikanische Marines stürmen die Vulkaninsel mit dem Berg Suribachi.',
     attGoal:'Erobere den Berg Suribachi und hisse die Flagge auf dem Gipfel',defGoal:'Verteidige die Insel gegen die Landung der Marines'},
-  cassino:{short:'Monte Cassino',name:'Schlacht um Monte Cassino',date:'Jan. – Mai 1944',year:1944,theme:'europe',variant:'hill',att:['uk','usa','fr'],def:['de'],attMode:'assault',defMode:'defense',
+  cassino:{short:'Monte Cassino',name:'Schlacht um Monte Cassino',date:'Jan. – Mai 1944',year:1944,theme:'europe',variant:'hill',att:['pl','uk','ca','usa','fr'],def:['de'],attMode:'assault',defMode:'defense',
     desc:'Der Kampf um den befestigten Klosterberg in Italien.',
     attGoal:'Erobere den Klosterberg und hisse die Flagge',defGoal:'Halte den Berg gegen die alliierten Angriffe'},
-  britain:{short:'Luftschlacht um England',name:'Luftschlacht um England',date:'Juli – Oktober 1940',year:1940,theme:'europe',variant:'',att:['de'],def:['uk'],attMode:'air',defMode:'air',
+  britain:{short:'Luftschlacht um England',name:'Luftschlacht um England',date:'Juli – Oktober 1940',year:1940,theme:'europe',variant:'',att:['de'],def:['uk','pl','ca'],attMode:'air',defMode:'air',
     desc:'Jäger gegen Jäger über dem Ärmelkanal.',
     attGoal:'Schieße die Jäger der Royal Air Force ab',defGoal:'Verteidige England: schieße die Angreifer ab'},
   pearl:{short:'Pearl Harbor',name:'Angriff auf Pearl Harbor',date:'7. Dezember 1941',year:1941,theme:'coast',variant:'',att:['jp'],def:['usa'],attMode:'air',defMode:'flak',
@@ -306,7 +314,9 @@ const ANTHEMS={
   de:{name:'Das Lied der Deutschen (Haydn-Melodie)',notes:[['G4',1],['A4',.5],['B4',.5],['C5',1],['B4',1],['A4',1],['G4',1],['A4',.5],['B4',.5],['D5',1],['C5',.5],['B4',.5],['A4',2],['B4',1],['C5',1],['D5',1],['B4',1],['G4',3]]},
   ussr44:{name:'Staatshymne der UdSSR (1944)',notes:[['C4',.5],['F4',1.5],['F4',.5],['G4',1],['A4',1],['Bb4',1.5],['A4',.5],['G4',1],['F4',1],['G4',1],['A4',1],['C5',2],['C5',1],['A4',1],['Bb4',1],['G4',1],['F4',3]]},
   intl:{name:'Die Internationale',notes:[['E4',.5],['A4',1],['A4',.5],['A4',.5],['B4',.5],['C5',1.5],['C5',.5],['B4',.5],['A4',.5],['G#4',1],['A4',2],['E4',.5],['A4',1],['B4',1],['C5',1],['D5',1.5],['C5',.5],['B4',1],['A4',3]]},
-  jp:{name:'Kimigayo',notes:[['D4',1],['D4',.5],['E4',.5],['A4',1.5],['G4',.5],['E4',1],['D4',1],['E4',1],['E4',1],['A4',2],['G4',1],['E4',.5],['D4',.5],['E4',2],['D4',3]]}};
+  jp:{name:'Kimigayo',notes:[['D4',1],['D4',.5],['E4',.5],['A4',1.5],['G4',.5],['E4',1],['D4',1],['E4',1],['E4',1],['A4',2],['G4',1],['E4',.5],['D4',.5],['E4',2],['D4',3]]},
+  ca:{name:'God Save the King (königliche Hymne Kanadas)',notes:[['C4',1],['C4',1],['D4',1],['B3',1.5],['C4',.5],['D4',1],['E4',1],['E4',1],['F4',1],['E4',1.5],['D4',.5],['C4',1],['D4',1],['C4',1],['B3',1],['C4',3]]},
+  pl:{name:'Mazurek Dąbrowskiego',notes:[['G4',.5],['C5',1.5],['C5',.5],['C5',.5],['E5',1],['D5',1.5],['C5',.5],['D5',1],['E5',1],['F5',.5],['E5',.5],['D5',1],['C5',3]]}};
 const anthemFor=(c,y)=>c==='ussr'?(y>=1944?ANTHEMS.ussr44:ANTHEMS.intl):ANTHEMS[c];
 let VARIANT='',GOAL=null,ERA=1944,BTL={battle:'free'},AIR_ALT=18,FLAKIDX=0,introDone=false,anthemNode=null;
 function resolveBattle(){
@@ -389,6 +399,10 @@ addW('arisaka','bolt','Arisaka Typ 99','Japanisches Repetiergewehr.',{dmg:60});
 addW('type100','smg','Typ-100-MP','Japanische Maschinenpistole.',{cd:.12,dmg:17});
 addW('type99lmg','mg','Typ-99-leichtes-MG','Leichtes MG mit 30 Schuss.',{mag:30,res:150,cd:.11,dmg:24});
 addW('arisaka_sn','sniper','Arisaka Typ 97 mit Zielfernrohr','Japanischer Scharfschütze.',{dmg:90});
+addW('mauser98','bolt','Mauser Karabin wz. 98a','Polnisches Repetiergewehr.',{dmg:62});
+addW('blyskawica','smg','Błyskawica','Improvisierte Maschinenpistole der Heimatarmee.',{mag:32,res:160,cd:.11,dmg:16,spread:.021});
+addW('wz28','mg','Browning wz. 28','Polnisches Automatikgewehr (BAR-Lizenz).',{mag:20,res:120,cd:.12,dmg:30,head:60,spread:.01,reload:2.8,range:150});
+addW('mauser_sn','sniper','Mauser wz. 98a mit Zielfernrohr','Polnischer Scharfschütze.',{dmg:92});
 const SPECIALS={};
 const addS=(id,kind,name,desc,o={})=>{SPECIALS[id]={kind,name,desc,...(kind==='rocket'?{start:4,chest:4,cd:2.2,speed:34,R:3.3,dmg:160}:{start:100,chest:50,cd:0,speed:0,R:0,dmg:0}),...o}};
 addS('bazooka','rocket','Bazooka M1','Panzerabwehr-Raketenwerfer: 4 Raketen, großer Krater.');
@@ -1158,6 +1172,8 @@ function flagTexture(kind){const c=document.createElement('canvas');c.width=48;c
   else if(kind==='uk'){R('#1d2f6f',0,0,48,30);R('#f2f2f2',0,11,48,8);R('#f2f2f2',20,0,8,30);R('#c8102e',0,13,48,4);R('#c8102e',22,0,4,30)}
   else if(kind==='ussr'){R('#c0272d',0,0,48,30);g.fillStyle='#ffd700';g.font='bold 14px monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('★',10,9)}
   else if(kind==='fr'){R('#1f3f9e',0,0,16,30);R('#f2f2f2',16,0,16,30);R('#d3262a',32,0,16,30)}
+  else if(kind==='ca'){R('#d52b1e',0,0,12,30);R('#f2f2f2',12,0,24,30);R('#d52b1e',36,0,12,30);R('#d52b1e',21,10,6,10);R('#d52b1e',23,7,2,16)}
+  else if(kind==='pl'){R('#f2f2f2',0,0,48,15);R('#dc143c',0,15,48,15)}
   else if(kind==='de'){R('#161616',0,0,48,10);R('#f2f2f2',0,10,48,10);R('#8a8a8a',0,20,48,10)}
   else{R('#efe6cf',0,0,48,30);R('#b8222a',20,0,8,30)}
   const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t}
