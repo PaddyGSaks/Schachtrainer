@@ -151,6 +151,15 @@ body.touch #toasts{top:12%;font-size:14px}
   <button class="btn hidden" id="respawnBtn" style="margin-top:10px;background:#7a3b2a;font-size:18px;padding:8px 30px">NEU SPAWNEN (falls etwas hängt)</button>
 </div>
 
+<div id="next" class="overlay hidden">
+  <h1 id="nextT">LEVEL GESCHAFFT</h1>
+  <h2 id="nextS"></h2>
+  <div class="box" id="nextBox"></div>
+  <button class="btn" id="nextSame">NÄCHSTES LEVEL</button>
+  <button class="btn" id="nextOther" style="margin-top:10px;background:#3b4f6b;font-size:18px;padding:8px 26px">ANDERES SZENARIO WÄHLEN</button>
+  <button class="btn" id="nextStay" style="margin-top:10px;background:#6b6b50;font-size:18px;padding:8px 26px">HIER WEITERSPIELEN</button>
+</div>
+
 <div id="dead" class="overlay hidden">
   <h1>GEFALLEN</h1>
   <h2 id="deadsub"></h2>
@@ -310,6 +319,7 @@ addS('panzerfaust','rocket','Panzerfaust 60','Einwegwaffe: 3 Schuss, schnell nac
 addS('flame_de','flame','Flammenwerfer 41','Deutscher Tornister-Flammenwerfer.');
 addS('type4','rocket','Typ-4-Raketenwerfer','Japanischer 70-mm-Raketenwerfer: 3 Schuss.',{start:3,chest:3,cd:2.4,dmg:165});
 addS('flame_jp','flame','Flammenwerfer Typ 93','Japanischer Flammenwerfer.');
+let LEVEL=1,CARRY=0,lvlHP=1,lvlDmg=1,lvlAcc=0,nextOpen=false;
 let CFG={country:'usa',uniform:0,mode:'assault',theme:'europe',primary:'garand',special:'bazooka',enemy:'de'};
 let THEME=THEMES.europe,W1=PRIMARIES.garand,SPEC=SPECIALS.bazooka;
 const PAL={friend:COUNTRIES.usa.uniforms[0],enemy:COUNTRIES.de.uniforms[0]};
@@ -641,7 +651,7 @@ function makeSoldier(sniper,ally){
 let enemyId=0;
 function spawnEnemy(x,z,o={}){
   const s=makeSoldier(!!o.sniper);const y=o.y!==undefined?o.y:gH(x,z)+1;
-  const e={id:enemyId++,x,y,z,vx:0,vy:0,vz:0,w:.3,h:1.8,hp:o.sniper?60:80,sniper:!!o.sniper,yaw:o.yaw||Math.random()*6.28,baseYaw:o.yaw||0,
+  const e={id:enemyId++,x,y,z,vx:0,vy:0,vz:0,w:.3,h:1.8,hp:(o.sniper?60:80)*lvlHP,sniper:!!o.sniper,yaw:o.yaw||Math.random()*6.28,baseYaw:o.yaw||0,
     hx:x,hz:z,pr:o.pr===undefined?5:o.pr,wx:x,wz:z,waitT:Math.random()*2,walkT:0,alert:0,los:false,losT:Math.random()*.2,aim:0,fireCd:1+Math.random(),
     lastX:x,lastZ:z,strafeT:0,strafeDir:1,dead:false,deadT:0,hurtT:0,flash:0,phase:Math.random()*6,onGround:false,bx:false,landV:0,...s};
   s.g.position.set(x,y,z);scene.add(s.g);enemies.push(e);return e}
@@ -650,12 +660,12 @@ function alertEnemies(x,z,r,tx=P.x,tz=P.z){for(const e of enemies)if(!e.dead&&Ma
 function enemyShoot(e,dist,T){
   const isP=!T||T===P;
   const ox=e.x,oy=e.y+1.45,oz=e.z,px=isP?P.x:T.x,py=isP?P.y+(crouching?.85:1.3):T.y+1.2,pz=isP?P.z:T.z;
-  const p=(e.sniper?clamp(.92-dist*.004,.4,.85):clamp(.5-dist*.011,.08,.5))*(isP&&crouching?.6:1);const hit=Math.random()<p;
+  const p=Math.min(.95,(e.sniper?clamp(.92-dist*.004,.4,.85):clamp(.5-dist*.011,.08,.5))+lvlAcc)*(isP&&crouching?.6:1);const hit=Math.random()<p;
   let tx=px,ty=py,tz=pz;if(!hit){tx+=(Math.random()-.5)*3;ty+=(Math.random()-.5)*2;tz+=(Math.random()-.5)*3}
   const fx=Math.sin(e.yaw),fz=Math.cos(e.yaw);
   spawnTracer(ox+fx*.9,oy-.2,oz+fz*.9,tx,ty,tz,0xffc860);e.flash=.07;
   sfx(e.sniper?'sniper':'enemy',clamp(1-dist/90,.12,.8));
-  if(hit){if(isP)damagePlayer(e.sniper?24:8,e.x,e.z);else damageAlly(T,e.sniper?24:8)}
+  if(hit){const dm=(e.sniper?24:8)*lvlDmg;if(isP)damagePlayer(dm,e.x,e.z);else damageAlly(T,dm)}
   alertEnemies(e.x,e.z,22)}
 function killEnemy(e,head,byAlly){
   e.dead=true;e.deadT=0;if(!byAlly)kills++;e.flash=0;e.flashVis=false;e.flash=0;e.flashMesh=null;
@@ -1065,10 +1075,22 @@ function setupFlag(gBase){
   roofCloth=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:flagTexture(kind),side:THREE.DoubleSide}));
   roofCloth.position.set(BASE.x+1,gBase+13.4,BASE.z+.5);scene.add(roofCloth);flagBase=gBase}
 let flagBase=0;
+function nextKey(auto){try{localStorage.setItem('blockfront-next',JSON.stringify({level:LEVEL+1,auto,carry:kills}))}catch(e){}location.reload()}
+function showNext(){
+  if(nextOpen||dead)return;nextOpen=true;
+  try{const b=parseInt(localStorage.getItem('blockfront-best')||'0');if(LEVEL>b)localStorage.setItem('blockfront-best',String(LEVEL))}catch(e){}
+  document.exitPointerLock();if(IS_TOUCH){locked=false;setTouchUI(false)}
+  document.getElementById('nextT').textContent='LEVEL '+LEVEL+' GESCHAFFT';
+  document.getElementById('nextS').textContent=`${COUNTRIES[CFG.country].name} · ${MODES[CFG.mode].name} · ${THEME.name}`;
+  document.getElementById('nextBox').innerHTML=`Zeit <b>${fmtTime(gameTime)}</b> · Abschüsse gesamt <b>${kills}</b><br>Level ${LEVEL+1} bringt eine neue Karte, härtere Gegner (mehr Leben, Schaden und Treffsicherheit) und mehr Feinde bzw. größere Wellen.`;
+  document.getElementById('next').classList.remove('hidden');menu.classList.add('hidden')}
+document.getElementById('nextSame').addEventListener('click',()=>nextKey(true));
+document.getElementById('nextOther').addEventListener('click',()=>nextKey(false));
+document.getElementById('nextStay').addEventListener('click',()=>{nextOpen=false;document.getElementById('next').classList.add('hidden');startGame()});
 function winMission(title,sub){
   if(missionDone)return;missionDone=true;
   const b=document.getElementById('banner');b.innerHTML=`${title}<small>${sub} · Zeit ${fmtTime(gameTime)} · ${kills} Abschüsse – spiel weiter!</small>`;b.style.transition='none';b.style.opacity=1;
-  setTimeout(()=>{b.style.transition='opacity 3s';b.style.opacity=0},6500);sfx('pick');tone(400,800,.3,.4,'triangle');tone(600,1200,.4,.4,'triangle',.2)}
+  setTimeout(()=>{b.style.transition='opacity 3s';b.style.opacity=0},6500);sfx('pick');tone(400,800,.3,.4,'triangle');tone(600,1200,.4,.4,'triangle',.2);setTimeout(showNext,3800)}
 function updateFlag(dt){
   if(!flagCloth)return;
   const capMode=CFG.mode==='assault'||CFG.mode==='trench'||CFG.mode==='urban';
@@ -1189,7 +1211,7 @@ function buildDefense(){
   placeGun(C.x+14,C.z+3,-Math.PI/2);placeGun(C.x-12,C.z+6,Math.PI/2);
   WV.n=0;WV.t=8}
 function startWave(){
-  WV.n++;const n=5+WV.n*3;toast(`Welle ${WV.n} von ${WV.total}!`);
+  WV.n++;const n=5+WV.n*3+Math.floor((LEVEL-1)*2);toast(`Welle ${WV.n} von ${WV.total}!`);
   for(let i=0;i<n;i++){const a=rnd()*6.283,r=34+rnd()*8;
     const x=clamp(Math.floor(BASE.x+Math.cos(a)*r),8,W-9),z=clamp(Math.floor(BASE.z+Math.sin(a)*r),8,D-9);
     const e=spawnEnemy(x+.5,z+.5,{pr:0});e.alert=1e6;e.lastX=BASE.x;e.lastZ=BASE.z}
@@ -1201,7 +1223,7 @@ function updateWaves(dt){
   if(CFG.mode!=='defense'||missionDone)return;
   const alive=enemies.filter(e=>!e.dead).length;
   if(WV.n<WV.total){WV.t-=dt;if(WV.t<=0||(WV.n>0&&alive<=2&&WV.t<55))startWave()}
-  else if(alive===0)winMission('STELLUNG GEHALTEN','Alle 6 Wellen zurückgeschlagen')}
+  else if(alive===0)winMission('STELLUNG GEHALTEN',`Alle ${WV.total} Wellen zurückgeschlagen`)}
 
 let camRoll=0,planeId=0,airSpawnT=3,allyPlaneT=20,planesSpawned=0;
 function groundTop(x,z,y0){let y=Math.min(H-1,Math.floor(y0)+3);for(;y>=0;y--)if(isSolid(Math.floor(x),y,Math.floor(z)))return y+1;return 1}
@@ -1212,7 +1234,7 @@ function makePlaneMesh(enemy){
   add(.55,.4,1.1,0x9cc6e0,0,.5,.3);add(.9,.9,.3,enemy?0xb02020:0x2a62c8,0,0,2.35);
   g.userData.prop=add(.12,2.2,.12,0x222222,0,0,2.55);scene.add(g);return g}
 function spawnPlane(x,y,z,enemy,yaw){
-  const g=makePlaneMesh(enemy);const pl={id:planeId++,g,x,y,z,yaw,pit:0,roll:0,speed:15,hp:enemy?60:90,enemy,dead:false,fallT:0,wp:null,fireCd:1+Math.random(),burst:0,tgt:null,tT:0,breakT:0,vx:0,vy:0,vz:0,formation:planeId%2?1:-1,gone:false};
+  const g=makePlaneMesh(enemy);const pl={id:planeId++,g,x,y,z,yaw,pit:0,roll:0,speed:15,hp:enemy?60*lvlHP:90,enemy,dead:false,fallT:0,wp:null,fireCd:1+Math.random(),burst:0,tgt:null,tT:0,breakT:0,vx:0,vy:0,vz:0,formation:planeId%2?1:-1,gone:false};
   g.position.set(x,y,z);planes.push(pl);return pl}
 function spawnEdgePlane(enemy){const side=(rnd()*4)|0;const x=side<2?(side?W-9:9):10+rnd()*76,z=side>=2?(side===3?D-9:9):10+rnd()*76;
   const gt=groundTop(x,z,20);spawnPlane(x,Math.min(H-6,gt+18+rnd()*10),z,enemy,Math.atan2(48-x,48-z));if(enemy)planesSpawned++}
@@ -1291,14 +1313,14 @@ function updatePlaneAI(pl,dt){
   pl.fireCd-=dt;
   if(T){const d=Math.hypot(T.x-pl.x,T.y-pl.y,T.z-pl.z)||1;const fx=Math.sin(pl.yaw)*Math.cos(pl.pit),fy=Math.sin(pl.pit),fz=Math.cos(pl.yaw)*Math.cos(pl.pit);
     const dot=((T.x-pl.x)*fx+(T.y-pl.y)*fy+(T.z-pl.z)*fz)/d;
-    if(d<58&&dot>.965&&pl.fireCd<=0){pl.burst++;pl.fireCd=pl.burst%7===0?1.6:.11;const hit=Math.random()<(pl.enemy?.2:.35);
+    if(d<58&&dot>.965&&pl.fireCd<=0){pl.burst++;pl.fireCd=pl.burst%7===0?1.6:.11;const hit=Math.random()<(pl.enemy?.2+lvlAcc*.6:.35);
       spawnTracer(pl.x+fx*2,pl.y+fy*2,pl.z+fz*2,T.x+(hit?0:(Math.random()-.5)*8),T.y+(hit?0:(Math.random()-.5)*6),T.z+(hit?0:(Math.random()-.5)*8),pl.enemy?0xff7a5a:0x7ab8ff);
-      if(hit){if(T.player)damagePlayer(5,pl.x,pl.z);else damagePlane(T,7)}
+      if(hit){if(T.player)damagePlayer(5*lvlDmg,pl.x,pl.z);else damagePlane(T,7)}
       if(T.player)sfx('enemy',clamp(1-d/90,.1,.5))}}
   pl.g.position.set(pl.x,pl.y,pl.z);pl.g.rotation.set(-pl.pit,pl.yaw,pl.roll);
   const pr=pl.g.userData.prop;if(pr)pr.rotation.z+=dt*40}
 const bombList=[],flakList=[],GUNS=[];let curGun=null,flakT=5,flakWave=0;
-function spawnBomber(){spawnEdgePlane(true);const pl=planes[planes.length-1];pl.bomber=true;pl.hp=160;pl.g.scale.setScalar(1.7);pl.phase='out';pl.bombs=0;pl.bombCd=0;pl.wp=null;pl.speed=12}
+function spawnBomber(){spawnEdgePlane(true);const pl=planes[planes.length-1];pl.bomber=true;pl.hp=160*lvlHP;pl.g.scale.setScalar(1.7);pl.phase='out';pl.bombs=0;pl.bombCd=0;pl.wp=null;pl.speed=12}
 function dropBomb(pl){
   const m=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.8),new THREE.MeshLambertMaterial({color:0x2b2b2b}));scene.add(m);
   bombList.push({x:pl.x+(Math.random()-.5)*3,y:pl.y-1.2,z:pl.z+(Math.random()-.5)*3,vx:pl.vx*.9,vy:-2,vz:pl.vz*.9,m});sfx('pin')}
@@ -1381,7 +1403,7 @@ function updateAir(dt){
   if(!missionDone){airSpawnT-=dt;if(airSpawnT<=0&&eAlive<5&&planesSpawned<AIR_TARGET+5){airSpawnT=7;spawnEdgePlane(true)}}
   const aAlive=planes.filter(q=>!q.enemy&&!q.dead&&!q.gone).length;
   if(aAlive<2){allyPlaneT-=dt;if(allyPlaneT<=0){allyPlaneT=20;spawnEdgePlane(false)}}
-  if(airKills>=AIR_TARGET)winMission('LUFTHERRSCHAFT','8 feindliche Flugzeuge abgeschossen')}
+  if(airKills>=AIR_TARGET)winMission('LUFTHERRSCHAFT',`${AIR_TARGET} feindliche Flugzeuge abgeschossen`)}
 function buildFlak(){
   const C=BASE;const gB=buildBase(C);placeTank();
   scatterCover(8,4);plantTrees(THEME.trees);setupFlag(gB);
@@ -1390,13 +1412,22 @@ function buildFlak(){
   spawnSquad(5);
   placeGun(C.x+14,C.z+3,-Math.PI/2);placeGun(C.x+3,C.z+14,Math.PI);placeGun(C.x-12,C.z+6,Math.PI/2);placeGun(C.x-3,C.z-13,0);
   spawnI('ammo',C.x-8.5,C.z-3.5);spawnI('med',C.x-8.5,C.z+4.5);spawnI('med',C.x+8.5,C.z+4.5);spawnI('gren',C.x+3.5,C.z+8.5);
-  AIR_TARGET=14}
+  }
 
 function buildWorld(){
   setupLayout();generateWorld();
   ({assault:buildAssault,trench:buildTrench,urban:buildUrban,defense:buildDefense,air:buildAir,flak:buildFlak})[CFG.mode]();
+  if(CFG.mode==='assault'||CFG.mode==='trench'||CFG.mode==='urban')spawnExtras();
   for(let k=0;k<NCX*NCZ;k++)dirty.add(k);
   buildMinimapBg()}
+function spawnExtras(){
+  const n=Math.min(30,(LEVEL-1)*3);
+  for(let i=0,t=0;i<n&&t<400;t++){const x=10+(rnd()*76|0),z=10+(rnd()*76|0);if(Math.hypot(x-SPAWN.x,z-SPAWN.z)<28)continue;
+    const y=heights[HI(x,z)]+1;if(getB(x,y,z)!==0||getB(x,y+1,z)!==0||getB(x,y-1,z)===B.WIRE)continue;
+    spawnEnemy(x+.5,z+.5,{pr:5,y});i++}}
+function checkClear(){
+  if(missionDone||!(CFG.mode==='assault'||CFG.mode==='trench'||CFG.mode==='urban'))return;
+  if(enemies.length&&enemies.every(e=>e.dead))winMission('ALLE FEINDE AUSGESCHALTET','Gefechtsfeld gesäubert')}
 
 /* ---------- Viewmodel ---------- */
 const vm={gun:new THREE.Group(),pick:new THREE.Group(),block:new THREE.Group(),rocket:new THREE.Group(),flash:null};
@@ -1470,7 +1501,7 @@ function updateHUD(dt){
   if(a!==lastAmmo){lastAmmo=a;document.getElementById('ammo').innerHTML=a}
   const alive=(CFG.mode==='air'||CFG.mode==='flak')?planes.filter(q=>!q.dead&&q.enemy).length:enemies.filter(e=>!e.dead).length;
   const objT={assault:'Hisse die Flagge im feindlichen Gefechtsstand',trench:'Erobere die Gräben und hisse die Flagge im Kommandobunker',urban:'Erobere das Hauptquartier und hisse die Flagge',defense:`Halte die Stellung – Welle ${Math.max(1,WV.n)} von ${WV.total}`,air:`Schieße ${AIR_TARGET} Flugzeuge ab (${airKills}/${AIR_TARGET})`,flak:`Flugabwehr: ${airKills}/${AIR_TARGET} Flugzeuge abgeschossen (E am Geschütz)`}[CFG.mode];
-  const obj=missionDone?'<b>MISSION ERFÜLLT</b> – freies Spiel':'<b>AUFTRAG:</b> '+objT;
+  const obj=missionDone?'<b>LEVEL '+LEVEL+' GESCHAFFT</b> – freies Spiel':'<b>LEVEL '+LEVEL+' · AUFTRAG:</b> '+objT;
   const st=`Feinde: ${alive} · Abschüsse: ${CFG.mode==='air'||CFG.mode==='flak'?airKills:kills} · Kameraden: ${CFG.mode==='air'?planes.filter(q=>!q.enemy&&!q.dead&&!q.gone).length:allies.filter(a=>!a.dead).length} · Zeit ${fmtTime(gameTime)}`;
   if(obj+st!==lastStats){lastStats=obj+st;document.getElementById('obj').innerHTML=obj;document.getElementById('stats').textContent=st}
   let tgx=FLAG.x,tgz=FLAG.z,hasT=true;
@@ -1560,7 +1591,7 @@ document.getElementById('respawnBtn').addEventListener('click',e=>{e.stopPropaga
 document.getElementById('newBtn').addEventListener('click',e=>{e.stopPropagation();location.reload()});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;
   if(locked){started=true;menu.classList.add('hidden');hud.classList.remove('hidden')}
-  else{lmb=rmb=false;for(const k in keys)keys[k]=false;if(!dead){showPauseBtns();menu.classList.remove('hidden');document.getElementById('mtitle').textContent=started?'PAUSE':'BLOCKFRONT 1944';document.getElementById('play').textContent=started?'WEITER':'SPIELEN'}}});
+  else{lmb=rmb=false;for(const k in keys)keys[k]=false;if(!dead&&!nextOpen){showPauseBtns();menu.classList.remove('hidden');document.getElementById('mtitle').textContent=started?'PAUSE':'BLOCKFRONT 1944';document.getElementById('play').textContent=started?'WEITER':'SPIELEN'}}});
 
 /* ---------- Hauptschleife ---------- */
 let nextBoom=8+Math.random()*10,last=performance.now(),ready=false;
@@ -1575,7 +1606,7 @@ function simulate(dt){
   if(lmb){if(inTank)fireTank();else if(slots[sel].t==='rifle'&&!reloading&&W1.auto)fireRifle();else if(slots[sel].t==='rocket'){if(SPEC.kind==='flame')fireFlame(dt);else fireRocket()}}
   updateBuild(dt);
   for(let i=0;i<n;i++){for(const e of enemies)if(!e.gone)updateEnemy(e,sub);for(const a of allies)updateAlly(a,sub)}
-  updateGrenades(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);updateWaves(dt);updateAir(dt);
+  updateGrenades(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);updateWaves(dt);updateAir(dt);checkClear();
   if(tankSmoke&&Math.random()<dt*7)spawnP(tankSmoke.x+(Math.random()-.5),tankSmoke.y,tankSmoke.z+(Math.random()-.5),(Math.random()-.5)*.4,1.4+Math.random(),(Math.random()-.5)*.4,0x2c2c2c,.5,3.2,-.4,.6);
   if(smoke2&&Math.random()<dt*9)spawnP(smoke2.x+(Math.random()-.5)*1.5,smoke2.y,smoke2.z+(Math.random()-.5)*1.5,(Math.random()-.5)*.4,1.5+Math.random(),(Math.random()-.5)*.4,0x242424,.6,3.5,-.4,.7);
   nextBoom-=dt;if(nextBoom<=0){nextBoom=12+Math.random()*20;sfx('far',.7);shake+=.04;flashT=Math.max(flashT,.12)}
@@ -1615,14 +1646,16 @@ function applyConfig(){
   buildGunModel(W1.model);buildSpecialModel(SPEC.kind);
   scene.background.setHex(THEME.fog);scene.fog.color.setHex(THEME.fog);
   if(CFG.mode==='air'){scene.fog.near=70;scene.fog.far=240}else if(IS_TOUCH){scene.fog.near=18;scene.fog.far=70}else{scene.fog.near=26;scene.fog.far=100}
+  kills=CARRY;lvlHP=1+Math.min(2,.12*(LEVEL-1));lvlDmg=1+Math.min(1,.06*(LEVEL-1));lvlAcc=Math.min(.25,.03*(LEVEL-1));
+  WV.total=6+Math.min(6,(LEVEL-1)>>1);AIR_TARGET=(CFG.mode==='flak'?14:8)+Math.min(22,(LEVEL-1)*2);
   setSky()}
 function finishBoot(){
   buildHotbar();ready=true;
   document.getElementById('loading').classList.add('hidden');menu.classList.remove('hidden');
-  document.getElementById('mh2').textContent=`${COUNTRIES[CFG.country].name} (${PAL.friend.name}) gegen ${COUNTRIES[CFG.enemy].name} · ${MODES[CFG.mode].name} · ${THEME.name}`;
+  document.getElementById('mh2').textContent=`LEVEL ${LEVEL} · ${COUNTRIES[CFG.country].name} (${PAL.friend.name}) gegen ${COUNTRIES[CFG.enemy].name} · ${MODES[CFG.mode].name} · ${THEME.name}`;
   document.getElementById('missionText').innerHTML=MODES[CFG.mode].text+'<br><b>Ausrüstung:</b> '+W1.name+' · '+SPEC.name;
   window.__bf={P,enemies,items,get hp(){return hp},get kills(){return kills},get locked(){return locked},setLocked(v){locked=v;menu.classList.add('hidden');hud.classList.remove('hidden')},
-    look(y,p){yaw=y;pitch=p},allies,GUNS,bombList,flakList,fireGun,get curGun(){return curGun},TANK,chests,planes,CFG,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},get airKills(){return airKills},WV,tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
+    look(y,p){yaw=y;pitch=p},winMission,get LEVEL(){return LEVEL},get lvl(){return {lvlHP,lvlDmg,lvlAcc}},allies,GUNS,bombList,flakList,fireGun,get curGun(){return curGun},TANK,chests,planes,CFG,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},get airKills(){return airKills},WV,tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
     get state(){return{mag,reserve,grenades,hp,dead,missionDone,yaw,pitch,locked,tris:renderer.info.render.triangles,calls:renderer.info.render.calls}},gH,FLAG,mouse(l,r){lmb=l;rmb=r}};
   if(CFG.mode==='air'){resetPlane();labelButtons()}else if(CFG.mode==='flak'&&GUNS.length)mountGun(GUNS[0])}
 function boot(){
@@ -1633,6 +1666,8 @@ function boot(){
       if(dirty.size)requestAnimationFrame(step);else finishBoot()})()},30))}
 /* ---------- Einsatz-Auswahl ---------- */
 (function setupScreen(){
+  let autoNext=false;
+  try{const nx=JSON.parse(localStorage.getItem('blockfront-next')||'null');localStorage.removeItem('blockfront-next');if(nx){LEVEL=nx.level||1;CARRY=nx.carry||0;autoNext=!!nx.auto}}catch(e){}
   try{const sv=JSON.parse(localStorage.getItem('blockfront-cfg')||'null');if(sv)for(const k of['country','uniform','mode','theme','primary','special'])if(sv[k]!==undefined)CFG[k]=sv[k]}catch(e){}
   if(!COUNTRIES[CFG.country])CFG.country='usa';if(!MODES[CFG.mode])CFG.mode='assault';if(!THEMES[CFG.theme])CFG.theme='europe';
   const info=document.getElementById('setupinfo');
@@ -1648,10 +1683,12 @@ function boot(){
     fill('cTheme',Object.keys(THEMES),k=>k===CFG.theme,k=>THEMES[k].name,k=>{CFG.theme=k;info.textContent=THEMES[k].name+': '+THEMES[k].desc});
     fill('cPrim',co.primaries,k=>k===CFG.primary,k=>PRIMARIES[k].name,k=>{CFG.primary=k;info.textContent=PRIMARIES[k].name+': '+PRIMARIES[k].desc+' ('+statText(PRIMARIES[k])+')'});
     fill('cSpec',co.specials,k=>k===CFG.special,k=>SPECIALS[k].name,k=>{CFG.special=k;info.textContent=SPECIALS[k].name+': '+SPECIALS[k].desc})}
-  render();info.textContent='Wähle zuerst das Land – Uniformen, Waffen und Ausrüstung richten sich danach. Dann Einsatzart und Schauplatz.';
+  let best=0;try{best=parseInt(localStorage.getItem('blockfront-best')||'0')}catch(e){}
+  render();info.textContent=(LEVEL>1?'LEVEL '+LEVEL+' wartet – ':'')+(best?'Rekord: Level '+best+'. ':'')+'Wähle zuerst das Land – Uniformen, Waffen und Ausrüstung richten sich danach. Dann Einsatzart und Schauplatz.';
   document.getElementById('startBtn').addEventListener('click',()=>{
     try{localStorage.setItem('blockfront-cfg',JSON.stringify(CFG))}catch(e){}
-    document.getElementById('setup').classList.add('hidden');loadEl.classList.remove('hidden');boot()})})();
+    document.getElementById('setup').classList.add('hidden');loadEl.classList.remove('hidden');boot()});
+  if(autoNext)document.getElementById('startBtn').click()})();
 requestAnimationFrame(frame);
 })();
 </script>
