@@ -91,12 +91,16 @@ body.touch{touch-action:none;overscroll-behavior:none;-webkit-touch-callout:none
 #joyknob{position:absolute;left:50%;top:50%;width:46px;height:46px;margin:-23px;border-radius:50%;background:rgba(255,255,255,.45)}
 .tb{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(20,20,20,.45);color:#fff;font:bold 13px "Courier New",monospace;display:flex;align-items:center;justify-content:center;text-align:center;text-shadow:1px 1px 0 #000}
 .tb.on{background:rgba(255,210,74,.65)}
-#bFire{right:16px;bottom:62px;width:84px;height:84px;font-size:15px;background:rgba(190,40,40,.5)}
-#bCrouch{right:22px;bottom:158px;width:58px;height:58px;font-size:11px}
-#bAds{right:112px;bottom:128px;width:58px;height:58px;font-size:12px}
-#bReload{right:108px;bottom:60px;width:48px;height:48px}
-#bGren{right:168px;bottom:96px;width:48px;height:48px}
-#bUse{right:170px;bottom:156px;width:48px;height:48px}
+#bFire{right:14px;bottom:56px;width:92px;height:92px;font-size:15px;background:rgba(190,40,40,.5)}
+#bFire2{left:20px;bottom:52px;width:92px;height:92px;font-size:15px;background:rgba(190,40,40,.5)}
+#bAds{right:118px;bottom:64px;width:62px;height:62px;font-size:12px}
+#bGren{right:22px;bottom:182px;width:50px;height:50px;font-size:9px;line-height:1.15}
+#bUse{right:104px;bottom:160px;width:60px;height:60px;font-size:20px;border-color:#ffd24a;animation:pulse 1s infinite}
+#bCrouch{left:14px;bottom:200px;width:54px;height:54px;font-size:10px}
+#bRun{left:14px;bottom:130px;width:54px;height:54px;font-size:10px}
+.tb.hold::after{content:'';position:absolute;inset:0;border-radius:50%;background:rgba(255,210,74,.75);animation:holdfill .32s linear forwards}
+@keyframes holdfill{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(255,210,74,.7)}50%{box-shadow:0 0 0 10px rgba(255,210,74,0)}}
 #bPause{right:80px;top:10px;width:40px;height:40px}
 #bRespawn{right:128px;top:10px;width:46px;height:46px;font-size:9px;line-height:1.15}
 body.touch #hotbar{pointer-events:auto;bottom:4px;padding:2px;border-width:2px}
@@ -175,11 +179,12 @@ body.touch #toasts{top:12%;font-size:14px}
   <div id="joyzone"></div>
   <div id="joybase" class="hidden"><div id="joyknob"></div></div>
   <div class="tb" id="bFire">FEUER</div>
-  <div class="tb" id="bCrouch">DUCKEN</div>
+  <div class="tb hidden" id="bFire2">FEUER</div>
   <div class="tb" id="bAds">ZIELEN</div>
-  <div class="tb" id="bReload">R</div>
-  <div class="tb" id="bGren">G</div>
-  <div class="tb" id="bUse">E</div>
+  <div class="tb" id="bGren">GRANATE<br>halten</div>
+  <div class="tb hidden" id="bUse">E</div>
+  <div class="tb" id="bCrouch">DUCKEN</div>
+  <div class="tb" id="bRun">LAUFEN</div>
   <div class="tb" id="bPause">II</div>
   <div class="tb" id="bRespawn">NEU<br>halten</div>
 </div>
@@ -874,7 +879,7 @@ function damagePlayer(amt,sx,sz,quiet){
     if(sx!==undefined){const dx=sx-P.x,dz=sz-P.z;const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
       const df=dx*fx+dz*fz,dr=dx*rx+dz*rz;const k=Math.abs(df)>Math.abs(dr)?(df>0?'T':'B'):(dr>0?'R':'L');dmgT[k]=1}}
   if(hp<=0){hp=0;die()}}
-let wireT=0;
+let wireT=0,sprintLock=false,sinceShot=9,flagNear=false;
 function onWire(e){const x=Math.floor(e.x),z=Math.floor(e.z);return getB(x,Math.floor(e.y+.3),z)===B.WIRE||getB(x,Math.floor(e.y+1),z)===B.WIRE}
 function clearWire(T){const x0=Math.floor(T.x-1.7),x1=Math.floor(T.x+1.7),z0=Math.floor(T.z-1.7),z1=Math.floor(T.z+1.7),y0=Math.floor(T.y);
   for(let y=y0;y<=y0+2;y++)for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++)if(getB(x,y,z)===B.WIRE)setB(x,y,z,0)}
@@ -886,7 +891,7 @@ const fmtTime=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 function fireRifle(){
   if(reloading>0||fireCd>0)return;
   if(mag<=0){if(reserve>0)startReload();else{sfx('click');fireCd=.3}return}
-  mag--;fireCd=W1.cd;kick=W1.kick;shake+=.012*W1.kick;sfx(W1.snd);
+  mag--;sinceShot=0;fireCd=W1.cd;kick=W1.kick;shake+=.012*W1.kick;sfx(W1.snd);
   const sp=Math.hypot(P.vx,P.vz);const spread=(ads>.5?W1.spread*.2:W1.spread)+(sp>1?.012:0)+(P.onGround?0:.02);
   const f=forwardVec();const ox=P.x,oy=P.y+eyeH,oz=P.z;
   const rx=Math.cos(yaw),rz=-Math.sin(yaw);
@@ -984,7 +989,7 @@ function updatePlayer(dt){
   if(wantCrouch&&!crouching){crouching=true;P.h=1.3}
   else if(!wantCrouch&&crouching&&!collides(P.x,P.y,P.z,P.w,1.8)){crouching=false;P.h=1.8}
   eyeH+=((crouching?1.2:1.62)-eyeH)*Math.min(1,dt*14);
-  let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint)&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;if(crouching)speed=Math.min(speed,2.3);
+  let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint||(sprintLock&&mz>0))&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;if(crouching)speed=Math.min(speed,2.3);
   const inWire=getB(Math.floor(P.x),Math.floor(P.y+.3),Math.floor(P.z))===B.WIRE||getB(Math.floor(P.x),Math.floor(P.y+1),Math.floor(P.z))===B.WIRE;
   wireT-=dt;if(inWire){speed*=.35;if(wireT<=0){wireT=.35;damagePlayer(4);if(Math.random()<.5)toast('Stacheldraht!')}}
   const wx=(f[0]*mz+r[0]*mx)*speed,wz=(f[1]*mz+r[1]*mx)*speed;
@@ -1155,6 +1160,7 @@ function interact(){if(dead||!locked)return;
   if(nearTank())enterTank()}
 function updatePrompt(){const el=document.getElementById('prompt');let t='';
   if(inTank)t=curGun?'[E] Geschütz verlassen':TANK.kind==='plane'?'':'[E] Aussteigen';else if(nearChest())t='[E] Truhe öffnen';else if(nearGun())t='[E] Flak-Geschütz bedienen';else if(nearTank())t='[E] Panzer besteigen';
+  if(IS_TOUCH)document.getElementById('bUse').classList.toggle('hidden',!(t||flagNear));
   if(t){el.textContent=t;el.classList.remove('hidden')}else el.classList.add('hidden')}
 // Minikarte
 const mm=document.getElementById('minimap'),mg=mm.getContext('2d');mm.width=mm.height=IS_TOUCH?96:128;let mmBg=null;
@@ -1224,7 +1230,7 @@ function winMission(title,sub){
 function updateFlag(dt){
   if(!flagCloth)return;
   const capMode=CFG.mode==='assault'||CFG.mode==='trench'||CFG.mode==='urban';
-  const near=capMode&&!FLAG.done&&!inTank&&Math.hypot(P.x-FLAG.x,P.z-FLAG.z)<3&&Math.abs(P.y-(flagBase+1))<3;
+  const near=capMode&&!FLAG.done&&!inTank&&Math.hypot(P.x-FLAG.x,P.z-FLAG.z)<3&&Math.abs(P.y-(flagBase+1))<3;flagNear=near;
   const capEl=document.getElementById('capture');
   if(near&&keys.KeyE){FLAG.prog=Math.min(1,FLAG.prog+dt/5)}else FLAG.prog=Math.max(0,FLAG.prog-dt/2.5);
   capEl.classList.toggle('hidden',!(near||FLAG.prog>0)||FLAG.done);
@@ -1671,7 +1677,8 @@ function cycleSlot(d){let n=sel;do{n=(n+d+slots.length)%slots.length}while(slots
 function isGun(){return inTank||slots[sel].t==='rifle'||slots[sel].t==='rocket'}
 function primaryDown(){if(inTank)fireTank();else{const t=slots[sel].t;if(t==='rifle')fireRifle();else if(t==='rocket'){if(SPEC.kind!=='flame')fireRocket()}else swing=Math.max(swing,.01)}}
 function selectSlot(i){i=(i+slots.length)%slots.length;if(slots[i].t==='rocket'&&!hasLauncher){toast('Raketenwerfer fehlt noch – such die Truhe (siehe Karte)');return}sel=i;if(IS_TOUCH){adsToggle=false;rmb=false;labelButtons()}if(slots[sel].t!=='rifle'&&reloading>0)reloading=0;mineKey=null;mineProg=0;buildHotbar()}
-function labelButtons(){const r=isGun();document.getElementById('bFire').textContent=r?'FEUER':'ABBAU';document.getElementById('bAds').textContent=r?'ZIELEN':'SETZEN'}
+function labelButtons(){const r=isGun();document.getElementById('bFire').textContent=r?'FEUER':'ABBAU';document.getElementById('bAds').textContent=r?'ZIELEN':'SETZEN';
+  if(IS_TOUCH){const v=inTank;document.getElementById('bFire2').classList.toggle('hidden',!v);document.getElementById('bCrouch').classList.toggle('hidden',v);document.getElementById('bRun').classList.toggle('hidden',v)}}
 addEventListener('keydown',e=>{keys[e.code]=true;
   if(!locked)return;
   if(e.code.startsWith('Digit')){const n=parseInt(e.code.slice(5));if(n>=0&&n<=9)selectSlot(n===0?9:n-1)}
@@ -1689,10 +1696,10 @@ function startGame(){initAudio();
   if(IS_TOUCH){locked=true;started=true;menu.classList.add('hidden');hud.classList.remove('hidden');setTouchUI(true);labelButtons();intro();
     try{const r=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(r&&r.catch)r.catch(()=>{})}catch(e){}return}
   canvas.requestPointerLock()}
-function pauseGame(){crouchToggle=false;locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);showPauseBtns();
+function pauseGame(){crouchToggle=false;sprintLock=false;{const rb=document.getElementById('bRun');if(rb)rb.style.background=''}locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);showPauseBtns();
   document.getElementById('joybase').classList.add('hidden');menu.classList.remove('hidden');document.getElementById('mtitle').textContent='PAUSE';document.getElementById('play').textContent='WEITER'}
 function setupTouch(){
-  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> <span id="missionText"></span><br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>DUCKEN</b> an/aus (schwerer zu treffen, aber langsam) · <b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Primärwaffe, 2 Spitzhacke, 3 Spezialwaffe, 4–0 Baublöcke)<br><b>E</b> Truhe öffnen (Raketen-Nachschub), Panzer besteigen/verlassen · die Karte oben links zeigt Flagge, Feindlager, Truhen und Panzer<br><br>Kameraden (blaue Markierung) folgen dir und helfen im Kampf. Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
+  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> <span id="missionText"></span><br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen – den Daumen auf FEUER lassen und ziehen = gleichzeitig zielen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>Links:</b> <b>DUCKEN</b> (schwerer zu treffen, langsam) · <b>LAUFEN</b> an/aus. <b>GRANATE</b> gedrückt halten, bis sie sich füllt. Nachladen geschieht automatisch.<br>Unten: Slots antippen (1 Primärwaffe, 2 Spitzhacke, 3 Spezialwaffe, 4–0 Baublöcke)<br><b>E</b> erscheint nur, wenn etwas zu tun ist (Truhe öffnen, einsteigen, Flagge hissen). In Flak, Panzer und Flugzeug gibt es links einen zweiten FEUER-Knopf: rechts schauen, links feuern. Die Karte oben links zeigt Flagge, Feindlager, Truhen, Panzer und Flak<br><br>Kameraden (blaue Markierung) folgen dir und helfen im Kampf. Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
   const jz=document.getElementById('joyzone'),lz=document.getElementById('lookzone'),base=document.getElementById('joybase'),knob=document.getElementById('joyknob');
   let jid=null,jx=0,jy=0,lid=null,lx=0,ly=0,lt0=0,lmv=0;const R=55;const NP={passive:false};
   jz.addEventListener('touchstart',e=>{e.preventDefault();if(jid!==null)return;const t=e.changedTouches[0];jid=t.identifier;jx=t.clientX;jy=t.clientY;
@@ -1708,9 +1715,19 @@ function setupTouch(){
   function bind(id,down,up){const el=document.getElementById(id);
     el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();el.classList.add('on');down()},NP);
     const end=e=>{e.preventDefault();el.classList.remove('on');if(up)up()};el.addEventListener('touchend',end);el.addEventListener('touchcancel',end)}
-  bind('bFire',()=>{lmb=true;primaryDown()},()=>{lmb=false});
+  let fireN=0;
+  function bindFire(id){const el=document.getElementById(id);let tid=null,lx=0,ly=0;
+    el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();const t=e.changedTouches[0];tid=t.identifier;lx=t.clientX;ly=t.clientY;el.classList.add('on');fireN++;lmb=true;primaryDown()},NP);
+    el.addEventListener('touchmove',e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier===tid){const s=.0058*(1-ads*.55);yaw-=(t.clientX-lx)*s;pitch=clamp(pitch-(t.clientY-ly)*s,-1.55,1.55);lx=t.clientX;ly=t.clientY}},NP);
+    const end=e=>{e.preventDefault();if(tid===null)return;tid=null;el.classList.remove('on');fireN=Math.max(0,fireN-1);if(!fireN)lmb=false};
+    el.addEventListener('touchend',end);el.addEventListener('touchcancel',end)}
+  bindFire('bFire');bindFire('bFire2');
     bind('bAds',()=>{if(isGun()){adsToggle=!adsToggle;rmb=adsToggle}else rmb=true},()=>{if(!isGun())rmb=false});
-  bind('bCrouch',()=>{crouchToggle=!crouchToggle;document.getElementById('bCrouch').style.background=crouchToggle?'rgba(255,210,74,.55)':''});bind('bReload',()=>startReload());bind('bGren',()=>throwGrenade());
+  bind('bCrouch',()=>{crouchToggle=!crouchToggle;document.getElementById('bCrouch').style.background=crouchToggle?'rgba(255,210,74,.55)':''});bind('bRun',()=>{sprintLock=!sprintLock;document.getElementById('bRun').style.background=sprintLock?'rgba(255,210,74,.55)':''});
+  {const el=document.getElementById('bGren');let tm=null;
+    el.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();el.classList.add('hold');tm=setTimeout(()=>{tm=null;el.classList.remove('hold');throwGrenade()},320)},NP);
+    const end=e=>{e.preventDefault();el.classList.remove('hold');if(tm){clearTimeout(tm);tm=null;toast('Granate: Knopf gedrückt halten')}};
+    el.addEventListener('touchend',end);el.addEventListener('touchcancel',end)}
   bind('bUse',()=>{keys.KeyE=true;interact()},()=>{keys.KeyE=false});bind('bPause',()=>pauseGame());
   let rt=null;const rb=document.getElementById('bRespawn');
   rb.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();rb.classList.add('on');rt=setTimeout(()=>{rt=null;rb.classList.remove('on');respawn()},800)},NP);
@@ -1750,6 +1767,7 @@ function simulate(dt){
   if(dead)return;
   fireCd=Math.max(0,fireCd-dt);gCd=Math.max(0,gCd-dt);
   if(reloading>0){reloading-=dt;if(reloading<=0){reloading=0;finishReload()}}
+  sinceShot+=dt;if(slots[sel].t==='rifle'&&!inTank&&!reloading&&!lmb&&mag<MAGSIZE&&reserve>0&&(mag===0||sinceShot>2.5))startReload();
   rocketCd=Math.max(0,rocketCd-dt);tankCd=Math.max(0,tankCd-dt);
   if(lmb){if(inTank)fireTank();else if(slots[sel].t==='rifle'&&!reloading&&W1.auto)fireRifle();else if(slots[sel].t==='rocket'){if(SPEC.kind==='flame')fireFlame(dt);else fireRocket()}}
   updateBuild(dt);
