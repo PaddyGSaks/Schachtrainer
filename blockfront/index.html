@@ -121,7 +121,7 @@ body.touch #toasts{top:12%;font-size:14px}
   <div id="crosshair"><i></i><i></i></div>
   <div id="hitmark">✕</div>
   <canvas id="minimap" width="128" height="128"></canvas>
-  <div id="mmlegend"><span style="color:#ffd24a">Flagge</span> <span style="color:#ff9c3a">Truhe</span> <span style="color:#7dd35b">Panzer</span> <span style="color:#ff5a5a">Feindlager</span> <span style="color:#4aa3ff">Kameraden</span></div>
+  <div id="mmlegend"><span style="color:#ffd24a">Flagge</span> <span style="color:#ff9c3a">Truhe</span> <span style="color:#7dd35b">Panzer</span> <span style="color:#ff5a5a">Feindlager</span> <span style="color:#4aa3ff">Kameraden</span> <span style="color:#c78bff">Flak</span></div>
   <div id="prompt" class="hidden"></div>
   <div id="topleft"><div id="obj"></div><div id="objsub"></div><div id="stats"></div></div>
   <div id="compass"><div id="arrow">▲</div><div id="dist"></div></div>
@@ -250,6 +250,7 @@ const MODES={
   trench:{name:'Grabenkampf',desc:'Ein verzweigtes Grabensystem mit Stacheldraht und Maschinengewehr-Nestern bis zum Kommandobunker.',text:'Erobere Graben für Graben das feindliche Stellungssystem und <b>hisse die Flagge</b> im Kommandobunker.'},
   urban:{name:'Häuserkampf',desc:'Eine zerstörte Stadt: Straßen, Barrikaden, Gegner in den Häusern, Hauptquartier in der Mitte.',text:'Säubere die Stadt Haus für Haus und <b>hisse die Flagge</b> im Hauptquartier in der Stadtmitte.'},
   defense:{name:'Verteidigung',desc:'Halte deine befestigte Stellung gegen 6 immer größere Angriffswellen.',text:'Halte die Stellung! Schlage <b>6 Angriffswellen</b> zurück – baue Deckung, nutze Panzer und Raketen.'},
+  flak:{name:'Flugabwehr',desc:'Du bedienst Flak-Geschütze und wehrst Jäger und Bomber ab, die dein Lager angreifen. 14 Abschüsse.',text:'Besetze ein <b>Flak-Geschütz</b> (E) und schieße anfliegende Jäger und Bomber ab – <b>14 Abschüsse</b>. Bomber werfen Bomben auf dein Lager, Kameraden sichern am Boden.'},
   air:{name:'Luftkampf',desc:'Du sitzt im Jagdflugzeug. Blick = Flugrichtung. Schieße 8 feindliche Flugzeuge ab.',text:'Fliege den Einsatz! Schieße <b>8 feindliche Flugzeuge</b> ab. Du fliegst dorthin, wohin du schaust; W/S = Gas.'}};
 const THEMES={
   europe:{name:'Europa (Frühling)',desc:'Wiesen, Ruinen aus Ziegel, tote Bäume.',fog:0xb9b4a0,sky:['#5d6d7a','#8a948f'],wall:B.BRICK,roof:B.PLANKS,tree:'dead',trees:30,sub:B.DIRT,top:(s,h)=>s>.62?B.DIRT:s<.22?B.SAND:B.GRASS},
@@ -376,9 +377,10 @@ function inZone(x,z,pad=0){return distTo(x,z,START)<14+pad||distTo(x,z,VILL)<16+
 function setupLayout(){
   const L={assault:{s:[14,14],v:[44,44],b:[72,72],t:[76,46]},trench:{s:[14,14],v:[-200,-200],b:[76,76],t:[26,20]},
     urban:{s:[14,14],v:[-200,-200],b:[48,48],t:[19.5,34.5]},defense:{s:[-200,-200],v:[-200,-200],b:[48,48],t:[62,36]},
+    flak:{s:[-200,-200],v:[-200,-200],b:[48,48],t:[62,36]},
     air:{s:[-200,-200],v:[-200,-200],b:[-200,-200],t:[-200,-200]}}[CFG.mode];
   Object.assign(START,{x:L.s[0],z:L.s[1]});Object.assign(VILL,{x:L.v[0],z:L.v[1]});Object.assign(BASE,{x:L.b[0],z:L.b[1]});Object.assign(TANKZ,{x:L.t[0],z:L.t[1]});
-  if(CFG.mode==='defense'){SPAWN.x=BASE.x-7.5;SPAWN.z=BASE.z+.5}else if(CFG.mode==='air'){SPAWN.x=48;SPAWN.z=48}else{SPAWN.x=START.x-1.5;SPAWN.z=START.z-1.5}}
+  if(CFG.mode==='defense'){SPAWN.x=BASE.x-7.5;SPAWN.z=BASE.z+.5}else if(CFG.mode==='flak'){SPAWN.x=BASE.x+11;SPAWN.z=BASE.z+3}else if(CFG.mode==='air'){SPAWN.x=48;SPAWN.z=48}else{SPAWN.x=START.x-1.5;SPAWN.z=START.z-1.5}}
 function generateWorld(){
   const M=CFG.mode;
   const hf=new Float32Array(W*D);const base=(x,z)=>M==='urban'?12:M==='air'?6+fbm(x,z)*7:10+fbm(x,z)*11;
@@ -387,9 +389,9 @@ function generateWorld(){
     for(let z=0;z<D;z++)for(let x=0;x<W;x++){const d=Math.hypot(x-c.x,z-c.z);if(d<r+bl){let t=d<r?1:1-(d-r)/bl;t=t*t*(3-2*t);hf[HI(x,z)]=lerp(hf[HI(x,z)],tg,t)}}};
   if(M==='assault'){flatten(START,10,8);flatten(VILL,13,8);flatten(BASE,15,8,2)}
   else if(M==='trench'){flatten(START,10,8);flatten(BASE,15,8,2)}
-  else if(M==='defense'){flatten(BASE,22,8)}
+  else if(M==='defense'||M==='flak'){flatten(BASE,22,8)}
   const hi=new Int16Array(W*D);for(let i=0;i<W*D;i++)hi[i]=Math.round(hf[i]);
-  const nCr=(M==='urban'||M==='air')?0:M==='defense'?22:34;
+  const nCr=(M==='urban'||M==='air')?0:(M==='defense'||M==='flak')?22:34;
   for(let i=0;i<nCr;i++){const cx=4+rnd()*(W-8),cz=4+rnd()*(D-8);if(inZone(cx,cz,2))continue;
     const r=2+rnd()*3.2,dep=r*.95;
     for(let z=Math.floor(cz-r-2);z<=cz+r+2;z++)for(let x=Math.floor(cx-r-2);x<=cx+r+2;x++){
@@ -700,6 +702,7 @@ function updateEnemy(e,dt){
     if(e.waitT<=0){const ddx=e.wx-e.x,ddz=e.wz-e.z,dd=Math.hypot(ddx,ddz);
       if(dd<.8||e.walkT<=0){e.wx=e.hx+(Math.random()-.5)*2*e.pr;e.wz=e.hz+(Math.random()-.5)*2*e.pr;e.waitT=1+Math.random()*3;e.walkT=6}
       else{speed=1.4;tx=ddx/dd;tz=ddz/dd;e.yaw=turnTo(e.yaw,Math.atan2(ddx,ddz),dt*5);e.walkT-=dt}}}
+  if(onWire(e)){speed*=.4;e.hp-=12*dt;e.hurtT=.12;if(e.hp<=0&&!e.dead){killEnemy(e,false,true);return}}
   e.vx=tx*speed;e.vz=tz*speed;e.vy-=26*dt;if(e.vy<-30)e.vy=-30;
   if(e.bx&&e.onGround&&speed>0)e.vy=8.2;
   moveEnt(e,dt);
@@ -728,14 +731,19 @@ function pick(it){it.gone=true;scene.remove(it.g);sfx('pick')}
 const forwardVec=()=>{const cp=Math.cos(pitch);return[-Math.sin(yaw)*cp,Math.sin(pitch),-Math.cos(yaw)*cp]};
 function damagePlayer(amt,sx,sz,quiet){
   if(dead||amt<=0)return;
-  if(inTank&&!quiet){TANK.hp-=amt;amt*=.1;sfx('hit');vigT=Math.max(vigT,.2);if(TANK.hp<=0){destroyTank();return}}
+  if(curGun&&!quiet)amt*=.6;
+  if(inTank&&!quiet&&!curGun){TANK.hp-=amt;amt*=.1;sfx('hit');vigT=Math.max(vigT,.2);if(TANK.hp<=0){destroyTank();return}}
   hp-=amt;
   if(!quiet){sfx('hurt');vigT=Math.min(1,.5+amt/30);
     if(sx!==undefined){const dx=sx-P.x,dz=sz-P.z;const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
       const df=dx*fx+dz*fz,dr=dx*rx+dz*rz;const k=Math.abs(df)>Math.abs(dr)?(df>0?'T':'B'):(dr>0?'R':'L');dmgT[k]=1}}
   if(hp<=0){hp=0;die()}}
+let wireT=0;
+function onWire(e){const x=Math.floor(e.x),z=Math.floor(e.z);return getB(x,Math.floor(e.y+.3),z)===B.WIRE||getB(x,Math.floor(e.y+1),z)===B.WIRE}
+function clearWire(T){const x0=Math.floor(T.x-1.7),x1=Math.floor(T.x+1.7),z0=Math.floor(T.z-1.7),z1=Math.floor(T.z+1.7),y0=Math.floor(T.y);
+  for(let y=y0;y<=y0+2;y++)for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++)if(getB(x,y,z)===B.WIRE)setB(x,y,z,0)}
 let vigT=0;const dmgT={T:0,B:0,L:0,R:0};
-function die(){if(inTank)leaveTank(true);dead=true;document.exitPointerLock();if(IS_TOUCH){locked=false;setTouchUI(false)}document.getElementById('deadsub').textContent=`Du hast ${kills} Feind${kills===1?'':'e'} ausgeschaltet · Zeit ${fmtTime(gameTime)}`;
+function die(){if(inTank){if(curGun)dismountGun(true);else leaveTank(true)}dead=true;document.exitPointerLock();if(IS_TOUCH){locked=false;setTouchUI(false)}document.getElementById('deadsub').textContent=`Du hast ${kills} Feind${kills===1?'':'e'} ausgeschaltet · Zeit ${fmtTime(gameTime)}`;
   document.getElementById('dead').classList.remove('hidden');document.getElementById('menu').classList.add('hidden')}
 const fmtTime=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 
@@ -791,7 +799,7 @@ function updateGrenades(dt){for(let i=grenadeList.length-1;i>=0;i--){const g=gre
   if(g.onGround){g.vx*=.82;g.vz*=.82;g.vy=Math.abs(ovy)>3?-ovy*.3:0;if(g.vy<0)g.vy=0;if(Math.abs(ovy)>3)g.vy=-ovy*.3}
   g.m.position.set(g.x,g.y+.12,g.z);g.m.rotation.x+=dt*8;g.m.rotation.z+=dt*5;
   if(g.fuse<=0){explode(g.x,g.y+.1,g.z);scene.remove(g.m);grenadeList.splice(i,1)}}}
-function explode(x,y,z,R=3.3,dmgMax=160,R2=7){
+function explode(x,y,z,R=3.3,dmgMax=160,R2=7,hostile=false){
   sfx('boom',1);
   const bx0=Math.floor(x-R-1),bx1=Math.floor(x+R+1),by0=Math.floor(y-R-1),by1=Math.floor(y+R+1),bz0=Math.floor(z-R-1),bz1=Math.floor(z+R+1);
   let n=0;
@@ -802,9 +810,9 @@ function explode(x,y,z,R=3.3,dmgMax=160,R2=7){
   for(let i=0;i<30;i++){const a=Math.random()*6.28,b=Math.random()*3.14-1.57,s=3+Math.random()*7;
     spawnP(x,y,z,Math.cos(a)*Math.cos(b)*s,Math.sin(b)*s+2,Math.sin(a)*Math.cos(b)*s,[0xffcc33,0xff7711,0xffee88][i%3],.25+Math.random()*.3,.5+Math.random()*.4,6,-.3)}
   for(let i=0;i<14;i++)spawnP(x+(Math.random()-.5)*2,y+Math.random()*1.5,z+(Math.random()-.5)*2,(Math.random()-.5)*1.5,1+Math.random()*2,(Math.random()-.5)*1.5,0x3a3a3a,.5+Math.random()*.4,1.6+Math.random()*1.4,-.5,.5);
-  for(const e of enemies){if(e.dead)continue;const d=Math.hypot(e.x-x,e.y+.9-y,e.z-z);if(d<R2)damageEnemy(e,dmgMax*(1-d/R2),false)}
+  if(!hostile)for(const e of enemies){if(e.dead)continue;const d=Math.hypot(e.x-x,e.y+.9-y,e.z-z);if(d<R2)damageEnemy(e,dmgMax*(1-d/R2),false)}
   for(const a of allies){if(a.dead)continue;const d=Math.hypot(a.x-x,a.y+.9-y,a.z-z);if(d<R2)damageAlly(a,dmgMax*.5*(1-d/R2))}
-  const dp=Math.hypot(P.x-x,P.y+.9-y,P.z-z);if(dp<R2&&!inTank)damagePlayer(dmgMax*.7*(1-dp/R2),x,z);
+  const dp=Math.hypot(P.x-x,P.y+.9-y,P.z-z);if(dp<R2&&(!inTank||curGun))damagePlayer(dmgMax*.7*(1-dp/R2),x,z);
   shake+=.55/(1+dp/5);flashT=Math.max(flashT,.3/(1+dp/6));alertEnemies(x,z,50)}
 
 /* ---------- Mining / Bauen ---------- */
@@ -842,7 +850,7 @@ function updatePlayer(dt){
   eyeH+=((crouching?1.2:1.62)-eyeH)*Math.min(1,dt*14);
   let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint)&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;if(crouching)speed=Math.min(speed,2.3);
   const inWire=getB(Math.floor(P.x),Math.floor(P.y+.3),Math.floor(P.z))===B.WIRE||getB(Math.floor(P.x),Math.floor(P.y+1),Math.floor(P.z))===B.WIRE;
-  if(inWire){speed*=.35;damagePlayer(5*dt,undefined,undefined,true);if(Math.random()<dt*3)toast('Stacheldraht!')}
+  wireT-=dt;if(inWire){speed*=.35;if(wireT<=0){wireT=.35;damagePlayer(4);if(Math.random()<.5)toast('Stacheldraht!')}}
   const wx=(f[0]*mz+r[0]*mx)*speed,wz=(f[1]*mz+r[1]*mx)*speed;
   const k=Math.min(1,dt*(P.onGround?12:3));P.vx+=(wx-P.vx)*k;P.vz+=(wz-P.vz)*k;
   if(keys.Space&&P.onGround){P.vy=crouching?6.8:8.6;P.onGround=false}
@@ -895,6 +903,7 @@ function updateAlly(a,dt){
     a.fireCd-=dt;if(a.fireCd<=0){allyShoot(a,e,a.tgtD);a.fireCd=.9+Math.random()*.7}}
   else if(speed>0)a.yaw=turnTo(a.yaw,Math.atan2(tx,tz),dt*8);
   else a.yaw=turnTo(a.yaw,Math.atan2(dxp,dzp),dt*2);
+  if(onWire(a)){speed*=.4;damageAlly(a,12*dt)}
   a.vx=tx*speed;a.vz=tz*speed;a.vy-=26*dt;if(a.vy<-30)a.vy=-30;
   if(a.bx&&a.onGround&&speed>0)a.vy=8.2;
   moveEnt(a,dt);
@@ -916,6 +925,7 @@ function fireRocket(){
   for(let i=0;i<8;i++)spawnP(P.x-f[0]*.8,P.y+eyeH-.2,P.z-f[2]*.8,-f[0]*2+(Math.random()-.5)*2,Math.random()*1.5,-f[2]*2+(Math.random()-.5)*2,0x999999,.25,.7,-.2,.4);
   alertEnemies(P.x,P.z,70)}
 function fireTank(){
+  if(curGun){fireGun();return}
   if(TANK.kind==='plane'){firePlane();return}
   if(tankCd>0)return;tankCd=TANK.info.cd;kick=1.2;shake+=.05;sfx('rocket');
   const f=forwardVec();spawnRocket(P.x+f[0]*3.2,P.y+eyeH-.75+f[1]*3.2,P.z+f[2]*3.2,f,46,true,4,220);alertEnemies(P.x,P.z,80)}
@@ -971,6 +981,7 @@ function moveTank(T,dt){
   n=T.y+T.vy*dt;T.onGround=false;
   if(collides(T.x,n,T.z,T.w,T.h)){if(T.vy<0){T.onGround=true;T.y=Math.floor(n)+1}else T.y=Math.floor(n+T.h)-T.h-.001;T.vy=0}else T.y=n}
 function updateTank(dt){
+  if(curGun){updateGunSeat(dt);return}
   const T=TANK;if(!T.alive||!T.g)return;
   if(T.kind==='plane'){if(inTank)updatePlane(dt);return}
   if(inTank){
@@ -984,7 +995,7 @@ function updateTank(dt){
     if(T.speed>1.5)for(const e of enemies)if(!e.dead&&Math.hypot(e.x-T.x,e.z-T.z)<2&&Math.abs(e.y-T.y)<2){damageEnemy(e,999,false);for(let i=0;i<8;i++)spawnP(e.x,e.y+.8,e.z,(Math.random()-.5)*3,Math.random()*3,(Math.random()-.5)*3,0xa01010,.09,.6)}
   }else{T.vx=T.vz=0;T.speed=0}
   T.vy-=26*dt;if(T.vy<-30)T.vy=-30;
-  moveTank(T,dt);
+  moveTank(T,dt);if(inTank&&Math.abs(T.speed)>.5)clearWire(T);
   T.g.position.set(T.x,T.y,T.z);T.g.rotation.y=T.yaw;
   if(inTank){P.x=T.x;P.y=T.y;P.z=T.z;P.vx=P.vy=P.vz=0;P.onGround=true;eyeH+=(2.45-eyeH)*Math.min(1,dt*8);
     T.turret.rotation.y=(yaw+Math.PI)-T.yaw;T.barrel.rotation.x=-clamp(pitch,-.3,.6)}}
@@ -1002,11 +1013,12 @@ function leaveTank(forced){
   P.vx=P.vy=P.vz=0;labelButtons();if(!forced)toast('Ausgestiegen')}
 function destroyTank(){if(TANK.kind==='plane'){planeCrash();return}const T=TANK;if(inTank)leaveTank(true);T.alive=false;T.g.visible=false;smoke2={x:T.x,y:T.y+1.5,z:T.z};toast('Dein Panzer wurde zerstört!');explode(T.x,T.y+1,T.z,3.6,150,7)}
 function interact(){if(dead||!locked)return;
-  if(inTank){if(TANK.kind==='plane'){toast('Im Flug kannst du nicht aussteigen');return}leaveTank(false);return}
+  if(inTank){if(curGun){dismountGun(false);return}if(TANK.kind==='plane'){toast('Im Flug kannst du nicht aussteigen');return}leaveTank(false);return}
   const c=nearChest();if(c){openChest(c);return}
+  const gn=nearGun();if(gn){mountGun(gn);return}
   if(nearTank())enterTank()}
 function updatePrompt(){const el=document.getElementById('prompt');let t='';
-  if(inTank)t=TANK.kind==='plane'?'':'[E] Aussteigen';else if(nearChest())t='[E] Truhe öffnen';else if(nearTank())t='[E] Panzer besteigen';
+  if(inTank)t=curGun?'[E] Geschütz verlassen':TANK.kind==='plane'?'':'[E] Aussteigen';else if(nearChest())t='[E] Truhe öffnen';else if(nearGun())t='[E] Flak-Geschütz bedienen';else if(nearTank())t='[E] Panzer besteigen';
   if(t){el.textContent=t;el.classList.remove('hidden')}else el.classList.add('hidden')}
 // Minikarte
 const mm=document.getElementById('minimap'),mg=mm.getContext('2d');mm.width=mm.height=IS_TOUCH?96:128;let mmBg=null;
@@ -1027,6 +1039,7 @@ function drawMinimap(){
   if(TANK.alive&&!inTank&&TANK.g){mg.save();mg.translate(TANK.x*S,TANK.z*S);mg.rotate(Math.PI/2-TANK.yaw);mg.fillStyle='#7dd35b';mg.strokeStyle='#000';mg.fillRect(-3.4*u,-2*u,6.8*u,4*u);mg.strokeRect(-3.4*u,-2*u,6.8*u,4*u);mg.restore()}
   // Spieler
   mg.fillStyle='#4aa3ff';mg.strokeStyle='#000';mg.lineWidth=1;for(const a of allies){if(a.dead)continue;mg.beginPath();mg.arc(a.x*S,a.z*S,1.8*u,0,6.283);mg.fill();mg.stroke()}
+  mg.fillStyle='#c78bff';mg.strokeStyle='#000';mg.lineWidth=1;for(const G of GUNS){mg.fillRect(G.x*S-1.6*u,G.z*S-1.6*u,3.2*u,3.2*u);mg.strokeRect(G.x*S-1.6*u,G.z*S-1.6*u,3.2*u,3.2*u)}
   for(const q of planes){if(q.dead||q.gone)continue;mg.fillStyle=q.enemy?'#ff4d4d':'#4aa3ff';mg.strokeStyle='#000';mg.beginPath();mg.arc(q.x*S,q.z*S,2.2*u,0,6.283);mg.fill();mg.stroke()}
   mg.save();mg.translate(P.x*S,P.z*S);mg.rotate(Math.atan2(-Math.cos(yaw),-Math.sin(yaw)));mg.fillStyle='#fff';mg.strokeStyle='#000';mg.lineWidth=1;
   mg.beginPath();mg.moveTo(4*u,0);mg.lineTo(-3*u,-3*u);mg.lineTo(-1.5*u,0);mg.lineTo(-3*u,3*u);mg.closePath();mg.fill();mg.stroke();mg.restore()}
@@ -1045,7 +1058,7 @@ function flagTexture(kind){const c=document.createElement('canvas');c.width=48;c
   const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t}
 function setupFlag(gBase){
   const geo=new THREE.PlaneGeometry(1.7,1.06);geo.translate(.85,0,0);
-  FLAG.x=BASE.x+2.5;FLAG.z=BASE.z+2.5;FLAG.prog=0;FLAG.done=CFG.mode==='defense';
+  FLAG.x=BASE.x+2.5;FLAG.z=BASE.z+2.5;FLAG.prog=0;FLAG.done=CFG.mode==='defense'||CFG.mode==='flak';
   const kind=FLAG.done?CFG.country:CFG.enemy;
   flagCloth=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:flagTexture(kind),side:THREE.DoubleSide}));
   flagTop=gBase+3.6;flagBot=gBase+1.7;flagCloth.position.set(FLAG.x+.5,flagTop,FLAG.z);scene.add(flagCloth);
@@ -1072,7 +1085,7 @@ function updateFlag(dt){
 
 /* ---------- Welt bauen ---------- */
 let tankSmoke=null;
-const planes=[];let airKills=0;const AIR_TARGET=8;const WV={n:0,total:6,t:8};
+const planes=[];let airKills=0;let AIR_TARGET=8;const WV={n:0,total:6,t:8};
 function levelArea(cx,cz,r,top=B.DIRT){const fx=Math.floor(cx),fz=Math.floor(cz),g=heights[HI(fx,fz)];
   for(let z=fz-r;z<=fz+r;z++)for(let x=fx-r;x<=fx+r;x++)if(x>0&&z>0&&x<W-1&&z<D-1)fillColumn(x,z,g,top);return g}
 function placeTank(){const g0=levelArea(TANKZ.x,TANKZ.z,6);initTank(Math.floor(TANKZ.x)+.5,g0+1,Math.floor(TANKZ.z)+.5)}
@@ -1116,7 +1129,7 @@ function buildAssault(){
   spawnE(40.5,42.5,{pr:6});spawnE(48.5,40.5,{pr:6});spawnE(41.5,52.5,{pr:6});spawnE(51.5,50.5,{pr:6});
   spawnE(52.5,52.5,{pr:.8});spawnE(58.5,53.5,{pr:.8});spawnE(64.5,52.5,{pr:.8});spawnE(60.5,60.5,{pr:.6});
   spawnE(25.5,40.5,{pr:.8});spawnE(31.5,41.5,{pr:.8});spawnE(70.5,44.5,{pr:2});spawnE(81.5,49.5,{pr:2});
-  baseSquad(BASE,gB);campItems();
+  baseSquad(BASE,gB);campItems();placeGun(BASE.x+8,BASE.z+8,Math.PI);
   spawnI('ammo',38.5,38.5);spawnI('med',49.5,39.5);spawnI('ammo',39.5,50.5);spawnI('gren',50.5,50.5);spawnI('med',44.5,44.5);
   spawnI('ammo',28.5,40.5);spawnI('ammo',29.5,63.5);spawnI('gren',56.5,53.5);spawnI('med',64.5,59.5)}
 
@@ -1130,7 +1143,7 @@ function buildTrench(){
   makeChest(52.5,heights[HI(52,37)]+1,37.5,'rockets');makeChest(40.5,heights[HI(40,46)]+1,46.5,'rockets');
   spawnSquad(5);
   T.slice(0,4).forEach(t=>{let k=0;for(let x=t[0]+8;x<t[2]-4;x+=14,k++)spawnE(x+.5,t[1]+(k%2)+.5,{pr:.8})});
-  baseSquad(BASE,gB);campItems();
+  baseSquad(BASE,gB);campItems();placeGun(BASE.x+8,BASE.z+8,Math.PI);
   [[38,28],[52,40],[66,52],[30,64]].forEach((q,i)=>spawnI(i%2?'med':'ammo',q[0]+.5,q[1]+.5));
   spawnI('gren',58.5,46.5);spawnI('ammo',36.5,46.5)}
 
@@ -1163,7 +1176,7 @@ function buildUrban(){
   spawnSquad(5);
   lots.forEach(l=>{if(rnd()<.45)spawnE(l.lx+5.5,l.lz+6.5,{pr:1.5});if(l.fl===2&&rnd()<.5)spawnE(l.lx+6.5,l.lz+6.5,{pr:.5,y:l.g+6})});
   for(let n=0,t=0;n<6&&t<300;t++){const x=9+(rnd()*76|0),z=9+(rnd()*76|0);if(!isStreet(x,z)||distTo(x,z,START)<26||(Math.abs(x-C.x)<14&&Math.abs(z-C.z)<14))continue;spawnE(x+.5,z+.5,{pr:4});n++}
-  baseSquad(C,gB);campItems();
+  baseSquad(C,gB);campItems();placeGun(C.x+8,C.z+8,Math.PI);
   lots.filter((l,i)=>i%3===0).forEach((l,i)=>spawnI(i%2?'med':'ammo',l.lx+6.5,l.lz+6.5,l.g+1))}
 
 function buildDefense(){
@@ -1173,6 +1186,7 @@ function buildDefense(){
   makeChest(C.x-8.5,gc+1,C.z+8.5,'rockets');makeChest(C.x+8.5,gc+1,C.z+8.5,'rockets');
   spawnSquad(7);
   spawnI('ammo',C.x-8.5,C.z-3.5);spawnI('ammo',C.x-8.5,C.z+4.5);spawnI('med',C.x+8.5,C.z-3.5);spawnI('med',C.x+8.5,C.z+4.5);spawnI('gren',C.x-3.5,C.z+8.5);spawnI('gren',C.x+3.5,C.z-8.5);
+  placeGun(C.x+14,C.z+3,-Math.PI/2);placeGun(C.x-12,C.z+6,Math.PI/2);
   WV.n=0;WV.t=8}
 function startWave(){
   WV.n++;const n=5+WV.n*3;toast(`Welle ${WV.n} von ${WV.total}!`);
@@ -1180,6 +1194,8 @@ function startWave(){
     const x=clamp(Math.floor(BASE.x+Math.cos(a)*r),8,W-9),z=clamp(Math.floor(BASE.z+Math.sin(a)*r),8,D-9);
     const e=spawnEnemy(x+.5,z+.5,{pr:0});e.alert=1e6;e.lastX=BASE.x;e.lastZ=BASE.z}
   for(const a of allies)if(a.dead){a.dead=false;a.hp=100;a.g.rotation.x=0;if(a.marker)a.marker.visible=true;for(const m of a.mats)m.emissive.setHex(0);a.x=BASE.x-6;a.z=BASE.z+a.slot-3;a.y=heights[HI(Math.floor(a.x),Math.floor(a.z))]+1}
+  if(WV.n>=3)for(let i=0;i<Math.min(2,WV.n-2);i++)spawnEdgePlane(true);
+  if(WV.n>=5)spawnBomber();
   WV.t=60}
 function updateWaves(dt){
   if(CFG.mode!=='defense'||missionDone)return;
@@ -1249,10 +1265,12 @@ function updatePlaneAI(pl,dt){
     if(Math.random()<dt*20)spawnP(pl.x,pl.y,pl.z,Math.random()-.5,Math.random()-.5,Math.random()-.5,Math.random()<.5?0x333333:0xff7711,.5,1.2,-.3,.6);
     if(pl.y<=gt+.5||pl.fallT>6){explode(pl.x,Math.max(pl.y,gt),pl.z,2.5,30,5);scene.remove(pl.g);pl.gone=true;return}
     pl.g.position.set(pl.x,pl.y,pl.z);pl.g.rotation.set(-pl.pit,pl.yaw,pl.roll);return}
+  if(pl.bomber){updateBomberAI(pl,dt);return}
   pl.tT-=dt;
   if(pl.tT<=0){pl.tT=.4;let best=null,bd=pl.enemy?150:170;
-    if(pl.enemy){const dp=Math.hypot(TANK.x-pl.x,TANK.y-pl.y,TANK.z-pl.z);
-      if(TANK.alive&&!dead&&inTank&&dp<bd){bd=dp;const cp=Math.cos(TANK.pit);best={x:TANK.x,y:TANK.y,z:TANK.z,player:true,vx:Math.sin(TANK.yaw)*cp*TANK.speed,vy:Math.sin(TANK.pit)*TANK.speed,vz:Math.cos(TANK.yaw)*cp*TANK.speed}}}
+    if(pl.enemy&&!dead){const pp=CFG.mode==='air'&&inTank&&TANK.kind==='plane'&&TANK.alive;
+      const px=pp?TANK.x:P.x,py=pp?TANK.y:P.y+1.2,pz=pp?TANK.z:P.z,dp=Math.hypot(px-pl.x,py-pl.y,pz-pl.z);
+      if(dp<bd){bd=dp;const cp=Math.cos(TANK.pit||0);best={x:px,y:py,z:pz,player:true,vx:pp?Math.sin(TANK.yaw)*cp*TANK.speed:0,vy:pp?Math.sin(TANK.pit)*TANK.speed:0,vz:pp?Math.cos(TANK.yaw)*cp*TANK.speed:0}}}
     for(const q of planes){if(q.dead||q.gone||q.enemy===pl.enemy)continue;const d=Math.hypot(q.x-pl.x,q.y-pl.y,q.z-pl.z);if(d<bd){bd=d;best=q}}
     pl.tgt=best}
   const T=pl.tgt&&!pl.tgt.dead&&!pl.tgt.gone?pl.tgt:null;
@@ -1279,18 +1297,104 @@ function updatePlaneAI(pl,dt){
       if(T.player)sfx('enemy',clamp(1-d/90,.1,.5))}}
   pl.g.position.set(pl.x,pl.y,pl.z);pl.g.rotation.set(-pl.pit,pl.yaw,pl.roll);
   const pr=pl.g.userData.prop;if(pr)pr.rotation.z+=dt*40}
+const bombList=[],flakList=[],GUNS=[];let curGun=null,flakT=5,flakWave=0;
+function spawnBomber(){spawnEdgePlane(true);const pl=planes[planes.length-1];pl.bomber=true;pl.hp=160;pl.g.scale.setScalar(1.7);pl.phase='out';pl.bombs=0;pl.bombCd=0;pl.wp=null;pl.speed=12}
+function dropBomb(pl){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(.35,.35,.8),new THREE.MeshLambertMaterial({color:0x2b2b2b}));scene.add(m);
+  bombList.push({x:pl.x+(Math.random()-.5)*3,y:pl.y-1.2,z:pl.z+(Math.random()-.5)*3,vx:pl.vx*.9,vy:-2,vz:pl.vz*.9,m});sfx('pin')}
+function updateBombs(dt){
+  for(let i=bombList.length-1;i>=0;i--){const b=bombList[i];b.vy-=16*dt;
+    const sp=Math.hypot(b.vx,b.vy,b.vz),hit=voxelRay(b.x,b.y,b.z,b.vx/sp,b.vy/sp,b.vz/sp,sp*dt+.2,0);
+    if(hit||b.y<1){const t=hit?Math.max(0,hit.t-.1):0;explode(b.x+b.vx/sp*t,b.y+b.vy/sp*t,b.z+b.vz/sp*t,3.8,160,8,true);scene.remove(b.m);bombList.splice(i,1);continue}
+    b.x+=b.vx*dt;b.y+=b.vy*dt;b.z+=b.vz*dt;b.m.position.set(b.x,b.y,b.z);b.m.rotation.x=Math.atan2(b.vy,Math.hypot(b.vx,b.vz))}}
+function updateBomberAI(pl,dt){
+  const gt=groundTop(pl.x,pl.z,pl.y);
+  if(!pl.wp||Math.hypot(pl.wp.x-pl.x,pl.wp.z-pl.z)<8){
+    if(pl.phase==='run'){pl.phase='out';const a=rnd()*6.28;pl.wp={x:clamp(48+Math.cos(a)*38,10,86),z:clamp(48+Math.sin(a)*38,10,86)}}
+    else{pl.phase='run';pl.wp={x:BASE.x>0?BASE.x+(rnd()-.5)*10:P.x,z:BASE.z>0?BASE.z+(rnd()-.5)*10:P.z};pl.bombs=0}}
+  const wy=Math.atan2(pl.wp.x-pl.x,pl.wp.z-pl.z),dY=((wy-pl.yaw+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;const tr=clamp(dY,-.55*dt,.55*dt);pl.yaw+=tr;
+  const ay=Math.min(H-6,gt+19);pl.pit+=clamp(Math.atan2(ay-pl.y,30)-pl.pit,-.4*dt,.4*dt);pl.pit=clamp(pl.pit,-.5,.5);
+  pl.roll+=(clamp(-tr/dt*.5,-.5,.5)-pl.roll)*Math.min(1,dt*3);
+  if(pl.x<10||pl.x>W-10||pl.z<10||pl.z>D-10){const w2=Math.atan2(48-pl.x,48-pl.z);const d2=((w2-pl.yaw+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;pl.yaw+=clamp(d2,-1*dt,1*dt)}
+  pl.speed=12;planeVel(pl);pl.x=clamp(pl.x+pl.vx*dt,3,W-3);pl.y=Math.max(gt+3,pl.y+pl.vy*dt);pl.z=clamp(pl.z+pl.vz*dt,3,D-3);
+  pl.bombCd-=dt;
+  if(pl.phase==='run'&&pl.bombs<7&&pl.bombCd<=0&&Math.hypot(pl.wp.x-pl.x,pl.wp.z-pl.z)<14){dropBomb(pl);pl.bombs++;pl.bombCd=.55}
+  pl.g.position.set(pl.x,pl.y,pl.z);pl.g.rotation.set(-pl.pit,pl.yaw,pl.roll);const pr=pl.g.userData.prop;if(pr)pr.rotation.z+=dt*30}
+// Flak-Geschuetze
+function placeGun(x,z,yaw){
+  const g0=levelArea(x,z,3),bx=Math.floor(x),bz=Math.floor(z);
+  for(let dz=-3;dz<=3;dz++)for(let dx=-3;dx<=3;dx++){const d=Math.hypot(dx,dz);if(d>2.4&&d<3.5&&!(Math.abs(dx)<=1&&dz>0))setB(bx+dx,g0+1,bz+dz,B.SANDBAG)}
+  setB(bx,g0+1,bz,B.METAL);
+  const grp=new THREE.Group(),M=c=>new THREE.MeshLambertMaterial({color:c});
+  const add=(par,w,h,d,c,px,py,pz)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(px,py,pz);par.add(m);return m};
+  add(grp,1.5,.25,1.5,0x4a4e44,0,.12,0);
+  const turret=new THREE.Group();turret.position.set(0,.3,0);grp.add(turret);
+  add(turret,1.0,.35,1.0,0x5b6342,0,.17,0);add(turret,1.5,.9,.14,0x4b5238,0,.65,.55);
+  const barrel=new THREE.Group();barrel.position.set(0,.55,.3);turret.add(barrel);
+  add(barrel,.14,.14,2.6,0x2e312a,-.3,0,1.3);add(barrel,.14,.14,2.6,0x2e312a,.3,0,1.3);add(barrel,.22,.22,.3,0x1d1f1a,-.3,0,2.7);add(barrel,.22,.22,.3,0x1d1f1a,.3,0,2.7);
+  grp.position.set(bx+.5,g0+2,bz+.5);scene.add(grp);
+  GUNS.push({x:bx+.5,y:g0+2,z:bz+.5,grp,turret,barrel,yaw0:yaw,alt:false})}
+function nearGun(){for(const G of GUNS)if(Math.hypot(P.x-G.x,P.z-G.z)<3.4&&Math.abs(P.y-G.y)<3)return G;return null}
+function mountGun(G){curGun=G;inTank=true;crouching=false;crouchToggle=false;P.h=1.8;lmb=rmb=false;adsToggle=false;yaw=G.yaw0;pitch=.35;
+  P.x=G.x;P.z=G.z;P.y=G.y;labelButtons();toast('Flak-Geschütz besetzt! Zielen mit Blick · FEUER = Flak · E = verlassen')}
+function dismountGun(forced){const G=curGun;curGun=null;inTank=false;lmb=rmb=false;adsToggle=false;
+  const tries=[[0,2.6],[2.6,0],[-2.6,0],[0,-2.6]];let ok=false;
+  for(const t of tries){const px=G.x+t[0],pz=G.z+t[1];if(!collides(px,G.y-1,pz,.3,1.8)){P.x=px;P.z=pz;P.y=G.y-1;ok=true;break}}
+  if(!ok){P.x=G.x;P.z=G.z+2.6;P.y=G.y+1}
+  P.vx=P.vy=P.vz=0;labelButtons();if(!forced)toast('Geschütz verlassen')}
+function updateGunSeat(dt){
+  const G=curGun;P.x=G.x;P.z=G.z;P.y=G.y;P.vx=P.vy=P.vz=0;P.onGround=true;eyeH+=(1.5-eyeH)*Math.min(1,dt*8);
+  pitch=clamp(pitch,-.2,1.45);G.turret.rotation.y=(yaw+Math.PI)-0;G.barrel.rotation.x=-pitch}
+function fireGun(){
+  const G=curGun;if(!G||tankCd>0)return;tankCd=.2;const f=forwardVec();G.alt=!G.alt;
+  const rx=Math.cos(yaw),rz=-Math.sin(yaw),sd=G.alt?-.3:.3;
+  spawnFlak(P.x+f[0]*2.6+rx*sd,P.y+eyeH-.45+f[1]*2.6,P.z+f[2]*2.6+rz*sd,f);
+  kick=.5;shake+=.012;sfx('enemy',.55);if(Math.random()<.5)sfx('rifle',.35);alertEnemies(P.x,P.z,50)}
+function spawnFlak(x,y,z,f){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(.16,.16,.7),new THREE.MeshBasicMaterial({color:0xffe27a}));scene.add(m);
+  flakList.push({x,y,z,vx:f[0]*85,vy:f[1]*85,vz:f[2]*85,life:2.6,m})}
+function detonateFlak(r,x,y,z,ground){
+  for(let i=0;i<10;i++)spawnP(x,y,z,(Math.random()-.5)*5,(Math.random()-.5)*5,(Math.random()-.5)*5,i%2?0x333333:0xffa030,.35+Math.random()*.3,.7,0,.5);
+  noiseB(.5,900,100,.7,'lowpass');
+  for(const pl of planes){if(pl.dead||pl.gone||!pl.enemy)continue;const d=Math.hypot(pl.x-x,pl.y-y,pl.z-z);if(d<6.5){damagePlane(pl,60*(1-d/6.5)+8,'player');hitMark(false)}}
+  if(ground)explode(x,y,z,2.4,55,5)}
+function updateFlak(dt){
+  for(let i=flakList.length-1;i>=0;i--){const r=flakList[i];r.life-=dt;r.vy-=1.2*dt;
+    const sp=Math.hypot(r.vx,r.vy,r.vz),dx=r.vx/sp,dy=r.vy/sp,dz=r.vz/sp,step=sp*dt;
+    const hit=voxelRay(r.x,r.y,r.z,dx,dy,dz,step+.1,0);
+    if(hit){const t=Math.max(0,hit.t-.1);detonateFlak(r,r.x+dx*t,r.y+dy*t,r.z+dz*t,true);scene.remove(r.m);flakList.splice(i,1);continue}
+    r.x+=dx*step;r.y+=dy*step;r.z+=dz*step;
+    let near=false;for(const pl of planes){if(!pl.dead&&!pl.gone&&pl.enemy&&Math.hypot(pl.x-r.x,pl.y-r.y,pl.z-r.z)<3.6){near=true;break}}
+    if(near||r.life<=0){detonateFlak(r,r.x,r.y,r.z,false);scene.remove(r.m);flakList.splice(i,1);continue}
+    r.m.position.set(r.x,r.y,r.z);r.m.lookAt(r.x+dx,r.y+dy,r.z+dz)}}
+function updateFlakWaves(dt){
+  if(CFG.mode!=='flak'||missionDone)return;
+  const alive=planes.filter(q=>q.enemy&&!q.dead&&!q.gone).length;flakT-=dt;
+  if(flakT<=0&&alive<=1){flakWave++;const nf=2+Math.min(flakWave,4),nb=flakWave>=2?Math.min(1+((flakWave-2)>>1),3):0;
+    for(let i=0;i<nf;i++)spawnEdgePlane(true);for(let i=0;i<nb;i++)spawnBomber();toast(`Welle ${flakWave}: ${nf} Jäger${nb?', '+nb+' Bomber':''}`);flakT=14}
+  if(airKills>=AIR_TARGET)winMission('LUFTRAUM GESICHERT',AIR_TARGET+' feindliche Flugzeuge abgeschossen')}
 function updateAir(dt){
-  if(CFG.mode!=='air')return;
   for(const pl of planes)if(!pl.gone)updatePlaneAI(pl,dt);
+  updateBombs(dt);updateFlak(dt);updateFlakWaves(dt);
+  if(CFG.mode!=='air')return;
   const eAlive=planes.filter(q=>q.enemy&&!q.dead&&!q.gone).length;
   if(!missionDone){airSpawnT-=dt;if(airSpawnT<=0&&eAlive<5&&planesSpawned<AIR_TARGET+5){airSpawnT=7;spawnEdgePlane(true)}}
   const aAlive=planes.filter(q=>!q.enemy&&!q.dead&&!q.gone).length;
   if(aAlive<2){allyPlaneT-=dt;if(allyPlaneT<=0){allyPlaneT=20;spawnEdgePlane(false)}}
   if(airKills>=AIR_TARGET)winMission('LUFTHERRSCHAFT','8 feindliche Flugzeuge abgeschossen')}
+function buildFlak(){
+  const C=BASE;const gB=buildBase(C);placeTank();
+  scatterCover(8,4);plantTrees(THEME.trees);setupFlag(gB);
+  const gc=heights[HI(C.x,C.z)];
+  makeChest(C.x-8.5,gc+1,C.z+8.5,'rockets');
+  spawnSquad(5);
+  placeGun(C.x+14,C.z+3,-Math.PI/2);placeGun(C.x+3,C.z+14,Math.PI);placeGun(C.x-12,C.z+6,Math.PI/2);placeGun(C.x-3,C.z-13,0);
+  spawnI('ammo',C.x-8.5,C.z-3.5);spawnI('med',C.x-8.5,C.z+4.5);spawnI('med',C.x+8.5,C.z+4.5);spawnI('gren',C.x+3.5,C.z+8.5);
+  AIR_TARGET=14}
 
 function buildWorld(){
   setupLayout();generateWorld();
-  ({assault:buildAssault,trench:buildTrench,urban:buildUrban,defense:buildDefense,air:buildAir})[CFG.mode]();
+  ({assault:buildAssault,trench:buildTrench,urban:buildUrban,defense:buildDefense,air:buildAir,flak:buildFlak})[CFG.mode]();
   for(let k=0;k<NCX*NCZ;k++)dirty.add(k);
   buildMinimapBg()}
 
@@ -1328,7 +1432,7 @@ let vmFlash=0;
 function updateVM(dt){
   const sp=Math.hypot(P.vx,P.vz);if(P.onGround)bobT+=dt*sp*1.9;
   const mv=sp>.5&&P.onGround?1:0;const bxo=Math.sin(bobT)*.012*mv,byo=Math.abs(Math.cos(bobT))*.012*mv;
-  const sl=inTank?{t:'none'}:slots[sel];vm.gun.visible=sl.t==='rifle';vm.pick.visible=sl.t==='pick';vm.block.visible=sl.t==='block';vm.rocket.visible=sl.t==='rocket';vm.cockpit.visible=inTank&&TANK.kind==='plane';if(vm.cockpit.visible&&vm.prop)vm.prop.rotation.z+=dt*60;
+  const sl=inTank?{t:'none'}:slots[sel];vm.gun.visible=sl.t==='rifle';vm.pick.visible=sl.t==='pick';vm.block.visible=sl.t==='block';vm.rocket.visible=sl.t==='rocket';vm.cockpit.visible=inTank&&!curGun&&TANK.kind==='plane';if(vm.cockpit.visible&&vm.prop)vm.prop.rotation.z+=dt*60;
   adsTarget=rmb&&(inTank||sl.t==='rifle'||sl.t==='rocket')&&reloading<=0;ads=lerp(ads,adsTarget?1:0,Math.min(1,dt*12));
   kick=Math.max(0,kick-dt*7);
   if(sl.t==='rifle'){const rp=reloading>0?1-reloading/RELOAD:0,rs=Math.sin(rp*Math.PI);
@@ -1359,17 +1463,18 @@ function updateHUD(dt){
   const h=Math.ceil(hp);if(h!==lastHP){lastHP=h;let s='';for(let i=0;i<10;i++){const v=hp-i*10;s+=`<span class="${v>=7?'':v>=3?'h':'e'}">♥</span>`}document.getElementById('hearts').innerHTML=s}
   const sl=slots[sel];let a=`${reloading>0?'NACHLADEN …':'<b>'+mag+'</b> / '+reserve}<br><small>${GR_NAME} [G]: ${grenades}</small>`;
   if(sl.t!=='rifle')a=`<small>Munition ${mag} / ${reserve} · ${GR_NAME} [G]: ${grenades}</small>`;
-  if(inTank&&TANK.kind==='plane')a=`<b>${Math.max(0,Math.ceil(TANK.hp))}</b> / ${TANK.max}<br><small>${VEH.friend.plane.name} · ${Math.round(TANK.speed*3.6)} km/h · Höhe ${Math.round(TANK.y)} m</small>`;
+  if(inTank&&curGun)a=`<b>FLAK</b><br><small>${tankCd>0?'LADEN …':'BEREIT'} · Abschüsse ${airKills}</small>`;
+  else if(inTank&&TANK.kind==='plane')a=`<b>${Math.max(0,Math.ceil(TANK.hp))}</b> / ${TANK.max}<br><small>${VEH.friend.plane.name} · ${Math.round(TANK.speed*3.6)} km/h · Höhe ${Math.round(TANK.y)} m</small>`;
   else if(inTank)a=`<b>${tankCd>0?'LADEN …':'BEREIT'}</b><br><small>${TANK.info.name} ${Math.max(0,Math.ceil(TANK.hp))} / ${TANK.max}</small>`;
   else if(sl.t==='rocket')a=SPEC.kind==='flame'?`<b>${Math.ceil(rockets)}%</b> Treibstoff<br><small>${GR_NAME} [G]: ${grenades}</small>`:`<b>${rocketCd>.6?'LADEN …':rockets}</b> Raketen<br><small>${GR_NAME} [G]: ${grenades}</small>`;
   if(a!==lastAmmo){lastAmmo=a;document.getElementById('ammo').innerHTML=a}
-  const alive=CFG.mode==='air'?planes.filter(q=>!q.dead&&q.enemy).length:enemies.filter(e=>!e.dead).length;
-  const objT={assault:'Hisse die Flagge im feindlichen Gefechtsstand',trench:'Erobere die Gräben und hisse die Flagge im Kommandobunker',urban:'Erobere das Hauptquartier und hisse die Flagge',defense:`Halte die Stellung – Welle ${Math.max(1,WV.n)} von ${WV.total}`,air:`Schieße ${AIR_TARGET} Flugzeuge ab (${airKills}/${AIR_TARGET})`}[CFG.mode];
+  const alive=(CFG.mode==='air'||CFG.mode==='flak')?planes.filter(q=>!q.dead&&q.enemy).length:enemies.filter(e=>!e.dead).length;
+  const objT={assault:'Hisse die Flagge im feindlichen Gefechtsstand',trench:'Erobere die Gräben und hisse die Flagge im Kommandobunker',urban:'Erobere das Hauptquartier und hisse die Flagge',defense:`Halte die Stellung – Welle ${Math.max(1,WV.n)} von ${WV.total}`,air:`Schieße ${AIR_TARGET} Flugzeuge ab (${airKills}/${AIR_TARGET})`,flak:`Flugabwehr: ${airKills}/${AIR_TARGET} Flugzeuge abgeschossen (E am Geschütz)`}[CFG.mode];
   const obj=missionDone?'<b>MISSION ERFÜLLT</b> – freies Spiel':'<b>AUFTRAG:</b> '+objT;
-  const st=`Feinde: ${alive} · Abschüsse: ${CFG.mode==='air'?airKills:kills} · Kameraden: ${CFG.mode==='air'?planes.filter(q=>!q.enemy&&!q.dead&&!q.gone).length:allies.filter(a=>!a.dead).length} · Zeit ${fmtTime(gameTime)}`;
+  const st=`Feinde: ${alive} · Abschüsse: ${CFG.mode==='air'||CFG.mode==='flak'?airKills:kills} · Kameraden: ${CFG.mode==='air'?planes.filter(q=>!q.enemy&&!q.dead&&!q.gone).length:allies.filter(a=>!a.dead).length} · Zeit ${fmtTime(gameTime)}`;
   if(obj+st!==lastStats){lastStats=obj+st;document.getElementById('obj').innerHTML=obj;document.getElementById('stats').textContent=st}
   let tgx=FLAG.x,tgz=FLAG.z,hasT=true;
-  if(CFG.mode==='defense'||CFG.mode==='air'){hasT=false;let bd=1e9;const list=CFG.mode==='air'?planes.filter(q=>!q.dead&&q.enemy):enemies.filter(e=>!e.dead);
+  if(CFG.mode==='defense'||CFG.mode==='air'||CFG.mode==='flak'){hasT=false;let bd=1e9;const list=(CFG.mode==='air'||CFG.mode==='flak')?planes.filter(q=>!q.dead&&q.enemy):enemies.filter(e=>!e.dead);
     for(const q of list){const d=Math.hypot(q.x-P.x,q.z-P.z);if(d<bd){bd=d;tgx=q.x;tgz=q.z;hasT=true}}}
   const dx=tgx-P.x,dz=tgz-P.z,dd=Math.hypot(dx,dz)||1;
   const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
@@ -1439,14 +1544,14 @@ if(IS_TOUCH)setupTouch();
 document.getElementById('play').addEventListener('click',e=>{e.stopPropagation();startGame()});
 menu.addEventListener('click',startGame);
 function respawn(){
-  if(inTank)leaveTank(true);
+  if(inTank){if(curGun)dismountGun(true);else leaveTank(true)}
   crouching=false;crouchToggle=false;P.h=1.8;eyeH=1.62;document.getElementById('bCrouch').style.background='';
   dead=false;hp=100;lastHP=-1;P.x=SPAWN.x;P.z=SPAWN.z;P.y=gH(SPAWN.x,SPAWN.z)+1;P.vx=P.vy=P.vz=0;
   while(collides(P.x,P.y,P.z,P.w,P.h)&&P.y<H-3)P.y+=1;
   reviveAllies();yaw=-Math.PI*.75;pitch=0;mag=MAGSIZE;reserve=Math.max(reserve,40);grenades=Math.max(grenades,3);
   reloading=0;fireCd=0;kick=0;shake=0;vigT=0;lmb=rmb=false;adsToggle=false;
   for(const e of enemies){e.alert=0;e.los=false;e.aim=0}
-  if(CFG.mode==='air')resetPlane();
+  if(CFG.mode==='air')resetPlane();else if(CFG.mode==='flak'&&GUNS.length)mountGun(GUNS[0]);
   for(const k in dmgT)dmgT[k]=0;
   for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;deadEl.classList.add('hidden');menu.classList.add('hidden');toast('Neu gespawnt im Lager');
   if(IS_TOUCH)startGame();else canvas.requestPointerLock()}
@@ -1494,12 +1599,6 @@ function frame(now){
 }
 
 /* ---------- Start ---------- */
-function finishBoot(){
-  buildHotbar();ready=true;
-  document.getElementById('loading').classList.add('hidden');menu.classList.remove('hidden');
-  window.__bf={P,enemies,items,get hp(){return hp},get kills(){return kills},get locked(){return locked},setLocked(v){locked=v;menu.classList.add('hidden');hud.classList.remove('hidden')},
-    look(y,p){yaw=y;pitch=p},allies,TANK,chests,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
-    get state(){return{mag,reserve,grenades,hp,dead,missionDone,yaw,pitch,locked,tris:renderer.info.render.triangles,calls:renderer.info.render.calls}},gH,FLAG,mouse(l,r){lmb=l;rmb=r}}}
 const loadEl=document.getElementById('loading');
 function setSky(){const c=document.createElement('canvas');c.width=4;c.height=256;const g=c.getContext('2d');const gr=g.createLinearGradient(0,0,0,256);
   const hex=n=>'#'+n.toString(16).padStart(6,'0');
@@ -1523,9 +1622,9 @@ function finishBoot(){
   document.getElementById('mh2').textContent=`${COUNTRIES[CFG.country].name} (${PAL.friend.name}) gegen ${COUNTRIES[CFG.enemy].name} · ${MODES[CFG.mode].name} · ${THEME.name}`;
   document.getElementById('missionText').innerHTML=MODES[CFG.mode].text+'<br><b>Ausrüstung:</b> '+W1.name+' · '+SPEC.name;
   window.__bf={P,enemies,items,get hp(){return hp},get kills(){return kills},get locked(){return locked},setLocked(v){locked=v;menu.classList.add('hidden');hud.classList.remove('hidden')},
-    look(y,p){yaw=y;pitch=p},allies,TANK,chests,planes,CFG,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},get airKills(){return airKills},WV,tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
+    look(y,p){yaw=y;pitch=p},allies,GUNS,bombList,flakList,fireGun,get curGun(){return curGun},TANK,chests,planes,CFG,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},get airKills(){return airKills},WV,tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
     get state(){return{mag,reserve,grenades,hp,dead,missionDone,yaw,pitch,locked,tris:renderer.info.render.triangles,calls:renderer.info.render.calls}},gH,FLAG,mouse(l,r){lmb=l;rmb=r}};
-  if(CFG.mode==='air'){resetPlane();labelButtons()}}
+  if(CFG.mode==='air'){resetPlane();labelButtons()}else if(CFG.mode==='flak'&&GUNS.length)mountGun(GUNS[0])}
 function boot(){
   loadEl.textContent='ERZEUGE WELT …';
   requestAnimationFrame(()=>setTimeout(()=>{
