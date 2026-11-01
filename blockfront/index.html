@@ -111,7 +111,7 @@ body.touch #toasts{top:12%;font-size:14px}
   <div id="crosshair"><i></i><i></i></div>
   <div id="hitmark">✕</div>
   <canvas id="minimap" width="128" height="128"></canvas>
-  <div id="mmlegend"><span style="color:#ffd24a">Flagge</span> <span style="color:#ff9c3a">Truhe</span> <span style="color:#7dd35b">Panzer</span> <span style="color:#ff5a5a">Feindlager</span></div>
+  <div id="mmlegend"><span style="color:#ffd24a">Flagge</span> <span style="color:#ff9c3a">Truhe</span> <span style="color:#7dd35b">Panzer</span> <span style="color:#ff5a5a">Feindlager</span> <span style="color:#4aa3ff">Kameraden</span></div>
   <div id="prompt" class="hidden"></div>
   <div id="topleft"><div id="obj"></div><div id="objsub"></div><div id="stats"></div></div>
   <div id="compass"><div id="arrow">▲</div><div id="dist"></div></div>
@@ -134,7 +134,7 @@ body.touch #toasts{top:12%;font-size:14px}
     <b>Linksklick</b> schießen / Blöcke abbauen · <b>Rechtsklick</b> zielen / Block setzen<br>
     <b>R</b> nachladen · <b>G</b> Handgranate (sprengt Löcher in die Welt!) · <b>1–9 / Mausrad</b> Slot wählen<br>
     <b>1</b> Gewehr · <b>2</b> Spitzhacke · <b>3</b> Raketenwerfer (Nachschub in Truhen) · <b>4–0</b> Baublöcke<br><b>E</b> Truhe öffnen / Panzer besteigen und aussteigen · Karte oben links zeigt Ziele<br><b>C / Strg</b> ducken (schwerer zu treffen, aber langsam) · <b>T</b> neu spawnen, falls etwas hängt oder buggt<br><br>
-    Wie in Minecraft kannst du alles abbauen und Deckung bauen. Feinde hören Schüsse – bleib in Bewegung.
+    Fünf Kameraden (blaue Markierung) begleiten dich und schießen auf Feinde. Wie in Minecraft kannst du alles abbauen und Deckung bauen. Feinde hören Schüsse – bleib in Bewegung.
     Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen.
   </div>
   <button class="btn" id="play">SPIELEN</button>
@@ -491,19 +491,23 @@ function updateTracers(dt){for(const t of tracers)if(t.life>0){t.life-=dt;if(t.l
 /* ---------- Gegner ---------- */
 const boxGeo=(w,h,d,oy=0)=>{const g=new THREE.BoxGeometry(w,h,d);if(oy)g.translate(0,oy,0);return g};
 const SG={leg:boxGeo(.22,.75,.24,-.375),torso:boxGeo(.52,.72,.28),head:boxGeo(.3,.3,.3),helm:boxGeo(.37,.17,.37),brim:boxGeo(.42,.04,.42),arm:boxGeo(.18,.62,.18,-.31),rifle:boxGeo(.07,.09,.95),flash:boxGeo(.22,.22,.1)};
-function makeSoldier(sniper){
+function makeSoldier(sniper,ally){
   const g=new THREE.Group();g.rotation.order='YXZ';const mats=[];
   const M=c=>{const m=new THREE.MeshLambertMaterial({color:c});mats.push(m);return m};
-  const uni=sniper?0x4e5446:0x6a6e58,pants=sniper?0x3e4238:0x55574a;
+  const uni=ally?0x8c7b4f:sniper?0x4e5446:0x6a6e58,pants=ally?0x6b6040:sniper?0x3e4238:0x55574a,hc=ally?0x56653a:0x4c514b;
   const mk=(geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);g.add(m);return m};
   const legL=mk(SG.leg,M(pants),-.13,.75,0),legR=mk(SG.leg,M(pants),.13,.75,0);
   mk(SG.torso,M(uni),0,1.11,0);
   mk(SG.head,M(0xc99a78),0,1.62,0);
-  mk(SG.helm,M(0x4c514b),0,1.76,0);mk(SG.brim,M(0x4c514b),0,1.68,0);
+  mk(SG.helm,M(hc),0,1.76,0);mk(SG.brim,M(hc),0,1.68,0);
   const aL=mk(SG.arm,M(uni),-.35,1.43,.02),aR=mk(SG.arm,M(uni),.35,1.43,.02);aL.rotation.x=aR.rotation.x=-1.25;aL.rotation.z=.25;aR.rotation.z=-.25;
   mk(SG.rifle,M(0x4a3220),.05,1.25,.45);
+  let marker=null;
+  if(ally){const band=new THREE.Mesh(new THREE.BoxGeometry(.55,.11,.31),new THREE.MeshLambertMaterial({color:0x3b6fd1}));band.position.set(0,1.28,0);g.add(band);
+    const star=new THREE.Mesh(new THREE.BoxGeometry(.1,.1,.02),new THREE.MeshBasicMaterial({color:0xffffff}));star.position.set(0,1.77,.19);g.add(star);
+    marker=new THREE.Mesh(new THREE.BoxGeometry(.16,.16,.16),new THREE.MeshBasicMaterial({color:0x4aa3ff}));marker.position.set(0,2.15,0);marker.rotation.set(.6,.8,0);g.add(marker)}
   const flash=new THREE.Mesh(SG.flash,new THREE.MeshBasicMaterial({color:0xffdd66}));flash.position.set(.05,1.25,1.0);flash.visible=false;g.add(flash);
-  return{g,mats,legL,legR,flash}}
+  return{g,mats,legL,legR,flash,marker}}
 let enemyId=0;
 function spawnEnemy(x,z,o={}){
   const s=makeSoldier(!!o.sniper);const y=o.y!==undefined?o.y:gH(x,z)+1;
@@ -513,39 +517,46 @@ function spawnEnemy(x,z,o={}){
   s.g.position.set(x,y,z);scene.add(s.g);enemies.push(e);return e}
 function turnTo(a,b,k){let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return a+d*Math.min(1,k)}
 function alertEnemies(x,z,r,tx=P.x,tz=P.z){for(const e of enemies)if(!e.dead&&Math.hypot(e.x-x,e.z-z)<r){e.alert=Math.max(e.alert,6);e.lastX=tx;e.lastZ=tz}}
-function enemyShoot(e,dist){
-  const ox=e.x,oy=e.y+1.45,oz=e.z,px=P.x,py=P.y+(crouching?.85:1.3),pz=P.z;
-  const p=(e.sniper?clamp(.92-dist*.004,.4,.85):clamp(.5-dist*.011,.08,.5))*(crouching?.6:1);const hit=Math.random()<p;
+function enemyShoot(e,dist,T){
+  const isP=!T||T===P;
+  const ox=e.x,oy=e.y+1.45,oz=e.z,px=isP?P.x:T.x,py=isP?P.y+(crouching?.85:1.3):T.y+1.2,pz=isP?P.z:T.z;
+  const p=(e.sniper?clamp(.92-dist*.004,.4,.85):clamp(.5-dist*.011,.08,.5))*(isP&&crouching?.6:1);const hit=Math.random()<p;
   let tx=px,ty=py,tz=pz;if(!hit){tx+=(Math.random()-.5)*3;ty+=(Math.random()-.5)*2;tz+=(Math.random()-.5)*3}
   const fx=Math.sin(e.yaw),fz=Math.cos(e.yaw);
   spawnTracer(ox+fx*.9,oy-.2,oz+fz*.9,tx,ty,tz,0xffc860);e.flash=.07;
   sfx(e.sniper?'sniper':'enemy',clamp(1-dist/90,.12,.8));
-  if(hit)damagePlayer(e.sniper?24:8,e.x,e.z);
+  if(hit){if(isP)damagePlayer(e.sniper?24:8,e.x,e.z);else damageAlly(T,e.sniper?24:8)}
   alertEnemies(e.x,e.z,22)}
-function killEnemy(e,head){
-  e.dead=true;e.deadT=0;kills++;e.flash=0;e.flashVis=false;e.flash=0;e.flashMesh=null;
-  toast(head?'Kopftreffer! Feind ausgeschaltet':'Feind ausgeschaltet');
+function killEnemy(e,head,byAlly){
+  e.dead=true;e.deadT=0;if(!byAlly)kills++;e.flash=0;e.flashVis=false;e.flash=0;e.flashMesh=null;
+  if(!byAlly)toast(head?'Kopftreffer! Feind ausgeschaltet':'Feind ausgeschaltet');
   const r=Math.random();if(r<.5)spawnItem('ammo',e.x,e.y,e.z);else if(r<.75)spawnItem('med',e.x,e.y,e.z);else if(r<.9)spawnItem('gren',e.x,e.y,e.z)}
-function damageEnemy(e,dmg,head){
-  if(e.dead)return;e.hp-=dmg;e.hurtT=.12;e.alert=Math.max(e.alert,8);e.lastX=P.x;e.lastZ=P.z;
-  if(e.hp<=0)killEnemy(e,head)}
+function damageEnemy(e,dmg,head,src){
+  if(e.dead)return;e.hp-=dmg;e.hurtT=.12;e.alert=Math.max(e.alert,8);e.lastX=src?src.x:P.x;e.lastZ=src?src.z:P.z;
+  if(e.hp<=0)killEnemy(e,head,!!src)}
+function pickTarget(e){
+  let best=dead?null:P,bd=dead?1e9:Math.hypot(P.x-e.x,P.z-e.z);
+  for(const a of allies){if(a.dead)continue;const d=Math.hypot(a.x-e.x,a.z-e.z);if(d<bd){bd=d;best=a}}
+  return best}
 function updateEnemy(e,dt){
   if(e.dead){
     e.deadT+=dt;const k=Math.min(1,e.deadT*3.5);e.g.rotation.x=-Math.PI/2*k;e.legL.rotation.x=e.legR.rotation.x=0;
     e.vx=e.vz=0;e.vy-=26*dt;moveEnt(e,dt);e.g.position.set(e.x,e.y+(k>=1?.18:0),e.z);
     if(e.deadT>10){scene.remove(e.g);e.gone=true}return}
   if(e.hurtT>0){e.hurtT-=dt;for(const m of e.mats)m.emissive.setHex(e.hurtT>0?0xaa1111:0)}
-  const dx=P.x-e.x,dz=P.z-e.z,dy=(P.y+eyeH*.92)-(e.y+1.5),dist=Math.hypot(dx,dz);
+  if(e.losT<=0||(e.tgt&&e.tgt.dead))e.tgt=pickTarget(e);
+  const T=e.tgt||P;const tyy=T===P?P.y+eyeH*.92:T.y+1.4;
+  const dx=T.x-e.x,dz=T.z-e.z,dy=tyy-(e.y+1.5),dist=Math.hypot(dx,dz);
   e.losT-=dt;
   if(e.losT<=0){e.losT=.2+Math.random()*.1;e.los=false;const range=e.sniper?75:40;
     if(dist<range){const len=Math.hypot(dist,dy)||1;
       if(!voxelRay(e.x,e.y+1.55,e.z,dx/len,dy/len,dz/len,len,0)){
         const fx=Math.sin(e.yaw),fz=Math.cos(e.yaw);const cosA=(dx*fx+dz*fz)/Math.max(dist,.001);
         if(dist<9||cosA>.25||e.alert>0)e.los=true}}}
-  if(e.los){e.alert=8;e.lastX=P.x;e.lastZ=P.z;e.aim+=dt}else{e.alert=Math.max(0,e.alert-dt);e.aim=Math.max(0,e.aim-dt*2)}
+  if(e.los){e.alert=8;e.lastX=T.x;e.lastZ=T.z;e.aim+=dt}else{e.alert=Math.max(0,e.alert-dt);e.aim=Math.max(0,e.aim-dt*2)}
   let tx=0,tz=0,speed=0;
   if(e.alert>0){
-    const wx=e.los?P.x:e.lastX,wz=e.los?P.z:e.lastZ,ddx=wx-e.x,ddz=wz-e.z,dd=Math.hypot(ddx,ddz)||1;
+    const wx=e.los?T.x:e.lastX,wz=e.los?T.z:e.lastZ,ddx=wx-e.x,ddz=wz-e.z,dd=Math.hypot(ddx,ddz)||1;
     e.yaw=turnTo(e.yaw,Math.atan2(ddx,ddz),dt*7);
     if(e.sniper)speed=0;
     else if(e.los){
@@ -554,7 +565,7 @@ function updateEnemy(e,dt){
       else{e.strafeT-=dt;if(e.strafeT<=0){e.strafeT=1+Math.random()*1.5;e.strafeDir=Math.random()<.5?-1:1}speed=1.8;tx=-ddz/dd*e.strafeDir;tz=ddx/dd*e.strafeDir}}
     else if(dd>1.5){speed=3;tx=ddx/dd;tz=ddz/dd}
     e.fireCd-=dt;
-    if(e.los&&e.aim>.7&&e.fireCd<=0){enemyShoot(e,dist);e.fireCd=e.sniper?3.2:.9+Math.random()*1.1}
+    if(e.los&&e.aim>.7&&e.fireCd<=0){enemyShoot(e,dist,T);e.fireCd=e.sniper?3.2:.9+Math.random()*1.1}
   }else if(e.sniper){e.yaw=e.baseYaw+Math.sin(gameTime*.3+e.id)*1.1}
   else{
     e.waitT-=dt;
@@ -646,6 +657,7 @@ function explode(x,y,z,R=3.3,dmgMax=160,R2=7){
     spawnP(x,y,z,Math.cos(a)*Math.cos(b)*s,Math.sin(b)*s+2,Math.sin(a)*Math.cos(b)*s,[0xffcc33,0xff7711,0xffee88][i%3],.25+Math.random()*.3,.5+Math.random()*.4,6,-.3)}
   for(let i=0;i<14;i++)spawnP(x+(Math.random()-.5)*2,y+Math.random()*1.5,z+(Math.random()-.5)*2,(Math.random()-.5)*1.5,1+Math.random()*2,(Math.random()-.5)*1.5,0x3a3a3a,.5+Math.random()*.4,1.6+Math.random()*1.4,-.5,.5);
   for(const e of enemies){if(e.dead)continue;const d=Math.hypot(e.x-x,e.y+.9-y,e.z-z);if(d<R2)damageEnemy(e,dmgMax*(1-d/R2),false)}
+  for(const a of allies){if(a.dead)continue;const d=Math.hypot(a.x-x,a.y+.9-y,a.z-z);if(d<R2)damageAlly(a,dmgMax*.5*(1-d/R2))}
   const dp=Math.hypot(P.x-x,P.y+.9-y,P.z-z);if(dp<R2&&!inTank)damagePlayer(dmgMax*.7*(1-dp/R2),x,z);
   shake+=.55/(1+dp/5);flashT=Math.max(flashT,.3/(1+dp/6));alertEnemies(x,z,50)}
 
@@ -692,6 +704,58 @@ function updatePlayer(dt){
   const was=P.onGround;P.landV=0;moveEnt(P,dt);
   if(P.onGround&&!was&&P.landV<-15){damagePlayer((-P.landV-15)*3.2);toast('Aua!')}
   if(P.y<-5){P.y=gH(P.x,P.z)+3;P.vy=0}}
+
+/* ---------- Kameraden ---------- */
+const allies=[];
+function spawnAlly(x,z,i){
+  const s=makeSoldier(false,true);const y=gH(x,z)+1;
+  const a={id:i,slot:i,x,y,z,vx:0,vy:0,vz:0,w:.3,h:1.8,hp:100,yaw:-Math.PI*.75,phase:0,fireCd:1+Math.random(),losT:Math.random()*.3,tgt:null,tgtD:0,dead:false,deadT:0,flash:0,hurtT:0,onGround:false,bx:false,landV:0,sT:0,sx:x,sz:z,...s};
+  s.g.position.set(x,y,z);scene.add(s.g);allies.push(a);return a}
+function damageAlly(a,d){if(a.dead)return;a.hp-=d;a.hurtT=.12;if(a.hp<=0){a.dead=true;a.deadT=0;toast('Kamerad gefallen!')}}
+function teleportAlly(a){
+  for(let t=0;t<12;t++){const ang=a.slot*1.26+t*.9,r=2.5+t*.35,px=P.x+Math.cos(ang)*r,pz=P.z+Math.sin(ang)*r;
+    if(px<2||pz<2||px>W-2||pz>D-2)continue;
+    for(let y=Math.floor(P.y)+3;y>=Math.max(1,Math.floor(P.y)-4);y--){if(isSolid(Math.floor(px),y-1,Math.floor(pz))&&!collides(px,y,pz,.3,1.8)){a.x=px;a.y=y;a.z=pz;a.vx=a.vy=a.vz=0;a.sx=px;a.sz=pz;return}}}
+  a.x=P.x+1.5;a.y=P.y;a.z=P.z;a.vx=a.vy=a.vz=0}
+function reviveAllies(){let n=0;for(const a of allies){if(a.dead){n++;a.dead=false;a.hp=100;a.g.rotation.x=0;if(a.marker)a.marker.visible=true;for(const m of a.mats)m.emissive.setHex(0)}teleportAlly(a)}
+  if(n)toast('Verstärkung ist eingetroffen')}
+function allyShoot(a,e,dist){
+  const ox=a.x,oy=a.y+1.45,oz=a.z,moving=Math.hypot(a.vx,a.vz)>1;
+  const p=clamp(.62-dist*.013,.12,.6)*(moving?.6:1);const hit=Math.random()<p;
+  let tx=e.x,ty=e.y+1.1,tz=e.z;if(!hit){tx+=(Math.random()-.5)*3;ty+=(Math.random()-.5)*2;tz+=(Math.random()-.5)*3}
+  const fx=Math.sin(a.yaw),fz=Math.cos(a.yaw);
+  spawnTracer(ox+fx*.9,oy-.2,oz+fz*.9,tx,ty,tz,0x9cc8ff);a.flash=.07;
+  sfx('enemy',clamp(.8-Math.hypot(P.x-a.x,P.z-a.z)/60,.05,.45));
+  if(hit)damageEnemy(e,38,false,a);
+  alertEnemies(a.x,a.z,22,a.x,a.z)}
+function updateAlly(a,dt){
+  const gl=a.g.children[a.g.children.length-1];
+  if(a.dead){a.deadT+=dt;const k=Math.min(1,a.deadT*3.5);a.g.rotation.x=-Math.PI/2*k;a.legL.rotation.x=a.legR.rotation.x=0;a.vx=a.vz=0;a.vy-=26*dt;moveEnt(a,dt);
+    a.g.position.set(a.x,a.y+(k>=1?.18:0),a.z);if(a.marker&&a.deadT>1)a.marker.visible=false;gl.visible=false;return}
+  if(a.hurtT>0){a.hurtT-=dt;for(const m of a.mats)m.emissive.setHex(a.hurtT>0?0xaa1111:0)}
+  const dxp=P.x-a.x,dzp=P.z-a.z,dp=Math.hypot(dxp,dzp);
+  if(dp>45){teleportAlly(a);return}
+  a.losT-=dt;
+  if(a.losT<=0){a.losT=.25+Math.random()*.15;let best=null,bd=1e9;
+    for(const e of enemies){if(e.dead)continue;const dx=e.x-a.x,dz=e.z-a.z,dd=Math.hypot(dx,dz);if(dd>38||dd>=bd)continue;const dy=(e.y+1.2)-(a.y+1.5),L=Math.hypot(dd,dy);
+      if(!voxelRay(a.x,a.y+1.55,a.z,dx/L,dy/L,dz/L,L,0)){best=e;bd=dd}}
+    a.tgt=best;a.tgtD=bd}
+  const e=a.tgt&&!a.tgt.dead?a.tgt:null;
+  const fx=P.x+Math.cos(a.slot*1.3+.5)*4.5,fz=P.z+Math.sin(a.slot*1.3+.5)*4.5;
+  const ddx=fx-a.x,ddz=fz-a.z,dd=Math.hypot(ddx,ddz)||1;
+  let tx=0,tz=0,speed=0;
+  if(dp>9||dd>3.5){speed=dp>18?6.2:4.4;tx=ddx/dd;tz=ddz/dd}
+  if(e){const want=Math.atan2(e.x-a.x,e.z-a.z);a.yaw=turnTo(a.yaw,want,dt*8);if(dp<=9&&a.tgtD<22)speed=speed*.35;
+    a.fireCd-=dt;if(a.fireCd<=0){allyShoot(a,e,a.tgtD);a.fireCd=.9+Math.random()*.7}}
+  else if(speed>0)a.yaw=turnTo(a.yaw,Math.atan2(tx,tz),dt*8);
+  else a.yaw=turnTo(a.yaw,Math.atan2(dxp,dzp),dt*2);
+  a.vx=tx*speed;a.vz=tz*speed;a.vy-=26*dt;if(a.vy<-30)a.vy=-30;
+  if(a.bx&&a.onGround&&speed>0)a.vy=8.2;
+  moveEnt(a,dt);
+  a.phase+=dt*speed*3.6;const sw=Math.sin(a.phase)*.8*(speed>0?1:0);a.legL.rotation.x=sw;a.legR.rotation.x=-sw;
+  if(a.flash>0)a.flash-=dt;gl.visible=a.flash>0;
+  a.sT+=dt;if(a.sT>2){if(speed>0&&dp>10&&Math.hypot(a.x-a.sx,a.z-a.sz)<.6)teleportAlly(a);a.sT=0;a.sx=a.x;a.sz=a.z}
+  a.g.position.set(a.x,a.y,a.z);a.g.rotation.y=a.yaw;if(a.marker)a.marker.rotation.y+=dt*2}
 
 /* ---------- Raketenwerfer, Truhen, Panzer ---------- */
 const rocketList=[];
@@ -812,6 +876,7 @@ function drawMinimap(){
   // Panzer
   if(TANK.alive&&!inTank&&TANK.g){mg.save();mg.translate(TANK.x*S,TANK.z*S);mg.rotate(Math.PI/2-TANK.yaw);mg.fillStyle='#7dd35b';mg.strokeStyle='#000';mg.fillRect(-3.4*u,-2*u,6.8*u,4*u);mg.strokeRect(-3.4*u,-2*u,6.8*u,4*u);mg.restore()}
   // Spieler
+  mg.fillStyle='#4aa3ff';mg.strokeStyle='#000';mg.lineWidth=1;for(const a of allies){if(a.dead)continue;mg.beginPath();mg.arc(a.x*S,a.z*S,1.8*u,0,6.283);mg.fill();mg.stroke()}
   mg.save();mg.translate(P.x*S,P.z*S);mg.rotate(Math.atan2(-Math.cos(yaw),-Math.sin(yaw)));mg.fillStyle='#fff';mg.strokeStyle='#000';mg.lineWidth=1;
   mg.beginPath();mg.moveTo(4*u,0);mg.lineTo(-3*u,-3*u);mg.lineTo(-1.5*u,0);mg.lineTo(-3*u,3*u);mg.closePath();mg.fill();mg.stroke();mg.restore()}
 
@@ -870,6 +935,7 @@ function buildWorld(){
   buildMinimapBg();
   // Spieler
   P.x=12.5;P.z=12.5;P.y=gH(12,12)+1;
+  for(let i=0;i<5;i++)spawnAlly(14.5+Math.cos(i*1.26)*2.5,14.5+Math.sin(i*1.26)*2.5,i);
   // Gegner
   const E=(x,z,o)=>spawnEnemy(x,z,o);
   E(40.5,42.5,{pr:6});E(48.5,40.5,{pr:6});E(41.5,52.5,{pr:6});E(51.5,50.5,{pr:6});
@@ -947,7 +1013,7 @@ function updateHUD(dt){
   if(a!==lastAmmo){lastAmmo=a;document.getElementById('ammo').innerHTML=a}
   const alive=enemies.filter(e=>!e.dead).length;
   const obj=missionDone?'<b>MISSION ERFÜLLT</b> – freies Spiel':'<b>AUFTRAG:</b> Hisse die Flagge im feindlichen Gefechtsstand';
-  const st=`Feinde: ${alive} · Abschüsse: ${kills} · Zeit ${fmtTime(gameTime)}`;
+  const st=`Feinde: ${alive} · Abschüsse: ${kills} · Kameraden: ${allies.filter(a=>!a.dead).length} · Zeit ${fmtTime(gameTime)}`;
   if(obj+st!==lastStats){lastStats=obj+st;document.getElementById('obj').innerHTML=obj;document.getElementById('stats').textContent=st}
   const dx=FLAG.x-P.x,dz=FLAG.z-P.z,dd=Math.hypot(dx,dz);
   const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
@@ -985,7 +1051,7 @@ function startGame(){initAudio();
 function pauseGame(){crouchToggle=false;locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);document.getElementById('respawnBtn').classList.remove('hidden');
   document.getElementById('joybase').classList.add('hidden');menu.classList.remove('hidden');document.getElementById('mtitle').textContent='PAUSE';document.getElementById('play').textContent='WEITER'}
 function setupTouch(){
-  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (Taste E gedrückt halten, wenn du am Mast stehst).<br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>DUCKEN</b> an/aus (schwerer zu treffen, aber langsam) · <b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Gewehr, 2 Spitzhacke, 3 Raketenwerfer, 4–0 Baublöcke)<br><b>E</b> Truhe öffnen (Raketen-Nachschub), Panzer besteigen/verlassen · die Karte oben links zeigt Flagge, Feindlager, Truhen und Panzer<br><br>Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
+  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (Taste E gedrückt halten, wenn du am Mast stehst).<br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>DUCKEN</b> an/aus (schwerer zu treffen, aber langsam) · <b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Gewehr, 2 Spitzhacke, 3 Raketenwerfer, 4–0 Baublöcke)<br><b>E</b> Truhe öffnen (Raketen-Nachschub), Panzer besteigen/verlassen · die Karte oben links zeigt Flagge, Feindlager, Truhen und Panzer<br><br>Fünf Kameraden (blaue Markierung) folgen dir und helfen im Kampf. Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
   const jz=document.getElementById('joyzone'),lz=document.getElementById('lookzone'),base=document.getElementById('joybase'),knob=document.getElementById('joyknob');
   let jid=null,jx=0,jy=0,lid=null,lx=0,ly=0,lt0=0,lmv=0;const R=55;const NP={passive:false};
   jz.addEventListener('touchstart',e=>{e.preventDefault();if(jid!==null)return;const t=e.changedTouches[0];jid=t.identifier;jx=t.clientX;jy=t.clientY;
@@ -1020,7 +1086,7 @@ function respawn(){
   crouching=false;crouchToggle=false;P.h=1.8;eyeH=1.62;document.getElementById('bCrouch').style.background='';
   dead=false;hp=100;lastHP=-1;P.x=12.5;P.z=12.5;P.y=gH(12,12)+1;P.vx=P.vy=P.vz=0;
   while(collides(P.x,P.y,P.z,P.w,P.h)&&P.y<H-3)P.y+=1;
-  yaw=-Math.PI*.75;pitch=0;mag=MAGSIZE;reserve=Math.max(reserve,40);grenades=Math.max(grenades,3);
+  reviveAllies();yaw=-Math.PI*.75;pitch=0;mag=MAGSIZE;reserve=Math.max(reserve,40);grenades=Math.max(grenades,3);
   reloading=0;fireCd=0;kick=0;shake=0;vigT=0;lmb=rmb=false;adsToggle=false;
   for(const e of enemies){e.alert=0;e.los=false;e.aim=0}
   for(const k in dmgT)dmgT[k]=0;
@@ -1044,7 +1110,7 @@ function simulate(dt){
   rocketCd=Math.max(0,rocketCd-dt);tankCd=Math.max(0,tankCd-dt);
   if(lmb){if(inTank)fireTank();else if(slots[sel].t==='rifle'&&!reloading)fireRifle();else if(slots[sel].t==='rocket')fireRocket()}
   updateBuild(dt);
-  for(let i=0;i<n;i++)for(const e of enemies)if(!e.gone)updateEnemy(e,sub);
+  for(let i=0;i<n;i++){for(const e of enemies)if(!e.gone)updateEnemy(e,sub);for(const a of allies)updateAlly(a,sub)}
   updateGrenades(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);
   if(tankSmoke&&Math.random()<dt*7)spawnP(tankSmoke.x+(Math.random()-.5),tankSmoke.y,tankSmoke.z+(Math.random()-.5),(Math.random()-.5)*.4,1.4+Math.random(),(Math.random()-.5)*.4,0x2c2c2c,.5,3.2,-.4,.6);
   if(smoke2&&Math.random()<dt*9)spawnP(smoke2.x+(Math.random()-.5)*1.5,smoke2.y,smoke2.z+(Math.random()-.5)*1.5,(Math.random()-.5)*.4,1.5+Math.random(),(Math.random()-.5)*.4,0x242424,.6,3.5,-.4,.7);
@@ -1073,7 +1139,7 @@ function finishBoot(){
   buildHotbar();ready=true;
   document.getElementById('loading').classList.add('hidden');menu.classList.remove('hidden');
   window.__bf={P,enemies,items,get hp(){return hp},get kills(){return kills},get locked(){return locked},setLocked(v){locked=v;menu.classList.add('hidden');hud.classList.remove('hidden')},
-    look(y,p){yaw=y;pitch=p},TANK,chests,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
+    look(y,p){yaw=y;pitch=p},allies,TANK,chests,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
     get state(){return{mag,reserve,grenades,hp,dead,missionDone,yaw,pitch,locked,tris:renderer.info.render.triangles,calls:renderer.info.render.calls}},gH,FLAG,mouse(l,r){lmb=l;rmb=r}}}
 const loadEl=document.getElementById('loading');
 function boot(){
