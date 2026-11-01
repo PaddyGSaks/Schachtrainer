@@ -78,6 +78,7 @@ body.touch{touch-action:none;overscroll-behavior:none;-webkit-touch-callout:none
 #bGren{right:168px;bottom:96px;width:48px;height:48px}
 #bUse{right:170px;bottom:156px;width:48px;height:48px}
 #bPause{right:80px;top:10px;width:40px;height:40px}
+#bRespawn{right:128px;top:10px;width:46px;height:46px;font-size:9px;line-height:1.15}
 body.touch #hotbar{pointer-events:auto;bottom:4px;padding:2px;border-width:2px}
 body.touch .slot{width:min(44px,9.2vw);height:min(44px,9.2vw);border-width:2px}
 body.touch .slot canvas{width:62%;height:62%}
@@ -123,11 +124,12 @@ body.touch #toasts{top:12%;font-size:14px}
     <b>WASD</b> bewegen · <b>Leertaste</b> springen · <b>Shift</b> sprinten · <b>Maus</b> umsehen<br>
     <b>Linksklick</b> schießen / Blöcke abbauen · <b>Rechtsklick</b> zielen / Block setzen<br>
     <b>R</b> nachladen · <b>G</b> Handgranate (sprengt Löcher in die Welt!) · <b>1–9 / Mausrad</b> Slot wählen<br>
-    <b>1</b> Gewehr · <b>2</b> Spitzhacke · <b>3–9</b> Baublöcke (Sandsäcke, Bretter, Ziegel, Beton …)<br><br>
+    <b>1</b> Gewehr · <b>2</b> Spitzhacke · <b>3–9</b> Baublöcke (Sandsäcke, Bretter, Ziegel, Beton …)<br><b>T</b> neu spawnen, falls etwas hängt oder buggt<br><br>
     Wie in Minecraft kannst du alles abbauen und Deckung bauen. Feinde hören Schüsse – bleib in Bewegung.
     Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen.
   </div>
   <button class="btn" id="play">SPIELEN</button>
+  <button class="btn hidden" id="respawnBtn" style="margin-top:10px;background:#7a3b2a;font-size:18px;padding:8px 30px">NEU SPAWNEN (falls etwas hängt)</button>
 </div>
 
 <div id="dead" class="overlay hidden">
@@ -147,6 +149,7 @@ body.touch #toasts{top:12%;font-size:14px}
   <div class="tb" id="bGren">G</div>
   <div class="tb" id="bUse">E</div>
   <div class="tb" id="bPause">II</div>
+  <div class="tb" id="bRespawn">NEU<br>halten</div>
 </div>
 <div id="rotate">Bitte das Handy quer halten<br>und das Spiel neu antippen.</div>
 <div id="loading">LADE SCHLACHTFELD …</div>
@@ -816,7 +819,7 @@ function labelButtons(){const r=slots[sel].t==='rifle';document.getElementById('
 addEventListener('keydown',e=>{keys[e.code]=true;
   if(!locked)return;
   if(e.code.startsWith('Digit')){const n=parseInt(e.code.slice(5));if(n>=1&&n<=9)selectSlot(n-1)}
-  if(e.code==='KeyR')startReload();if(e.code==='KeyG'&&!e.repeat)throwGrenade();
+  if(e.code==='KeyT'&&!e.repeat)respawn();if(e.code==='KeyR')startReload();if(e.code==='KeyG'&&!e.repeat)throwGrenade();
   if(e.code==='Space'||e.code==='Tab')e.preventDefault()});
 addEventListener('keyup',e=>{keys[e.code]=false});
 addEventListener('mousedown',e=>{if(!locked||IS_TOUCH)return;if(e.button===0){lmb=true;if(slots[sel].t==='rifle')fireRifle();else swing=Math.max(swing,.01)}if(e.button===2)rmb=true;e.preventDefault()});
@@ -829,7 +832,7 @@ function startGame(){initAudio();
   if(IS_TOUCH){locked=true;started=true;menu.classList.add('hidden');hud.classList.remove('hidden');setTouchUI(true);labelButtons();
     try{const r=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(r&&r.catch)r.catch(()=>{})}catch(e){}return}
   canvas.requestPointerLock()}
-function pauseGame(){locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);
+function pauseGame(){locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);document.getElementById('respawnBtn').classList.remove('hidden');
   document.getElementById('joybase').classList.add('hidden');menu.classList.remove('hidden');document.getElementById('mtitle').textContent='PAUSE';document.getElementById('play').textContent='WEITER'}
 function setupTouch(){
   document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (Taste E gedrückt halten, wenn du am Mast stehst).<br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> umsehen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Gewehr, 2 Spitzhacke, 3–9 Baublöcke)<br><br>Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
@@ -853,6 +856,10 @@ function setupTouch(){
   bind('bAds',()=>{if(slots[sel].t==='rifle'){adsToggle=!adsToggle;rmb=adsToggle}else rmb=true},()=>{if(slots[sel].t!=='rifle')rmb=false});
   bind('bReload',()=>startReload());bind('bGren',()=>throwGrenade());
   bind('bUse',()=>{keys.KeyE=true},()=>{keys.KeyE=false});bind('bPause',()=>pauseGame());
+  let rt=null;const rb=document.getElementById('bRespawn');
+  rb.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();rb.classList.add('on');rt=setTimeout(()=>{rt=null;rb.classList.remove('on');respawn()},800)},NP);
+  const rEnd=e=>{e.preventDefault();rb.classList.remove('on');if(rt){clearTimeout(rt);rt=null;toast('Zum Neustarten gedrückt halten')}};
+  rb.addEventListener('touchend',rEnd);rb.addEventListener('touchcancel',rEnd);
   hotbarEl.addEventListener('touchstart',e=>{const sl=e.target.closest('.slot');if(sl){e.preventDefault();e.stopPropagation();selectSlot(+sl.dataset.i)}},NP);
   document.addEventListener('touchmove',e=>{if(locked)e.preventDefault()},NP);
 }
@@ -866,12 +873,13 @@ function respawn(){
   reloading=0;fireCd=0;kick=0;shake=0;vigT=0;lmb=rmb=false;adsToggle=false;
   for(const e of enemies){e.alert=0;e.los=false;e.aim=0}
   for(const k in dmgT)dmgT[k]=0;
-  deadEl.classList.add('hidden');toast('Neu gespawnt im Lager');
+  for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;deadEl.classList.add('hidden');menu.classList.add('hidden');toast('Neu gespawnt im Lager');
   if(IS_TOUCH)startGame();else canvas.requestPointerLock()}
 deadEl.addEventListener('click',respawn);
+document.getElementById('respawnBtn').addEventListener('click',e=>{e.stopPropagation();respawn()});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;
   if(locked){started=true;menu.classList.add('hidden');hud.classList.remove('hidden')}
-  else{lmb=rmb=false;for(const k in keys)keys[k]=false;if(!dead){menu.classList.remove('hidden');document.getElementById('mtitle').textContent=started?'PAUSE':'BLOCKFRONT 1944';document.getElementById('play').textContent=started?'WEITER':'SPIELEN'}}});
+  else{lmb=rmb=false;for(const k in keys)keys[k]=false;if(!dead){document.getElementById('respawnBtn').classList.remove('hidden');menu.classList.remove('hidden');document.getElementById('mtitle').textContent=started?'PAUSE':'BLOCKFRONT 1944';document.getElementById('play').textContent=started?'WEITER':'SPIELEN'}}});
 
 /* ---------- Hauptschleife ---------- */
 let nextBoom=8+Math.random()*10,last=performance.now(),ready=false;
