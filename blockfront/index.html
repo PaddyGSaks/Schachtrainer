@@ -11,6 +11,16 @@ body.touch{--mm:96px}
 #mmlegend{position:absolute;left:12px;top:calc(var(--mm) + 20px);font-size:9px;line-height:1.3;max-width:calc(var(--mm) + 20px)}
 #prompt{position:absolute;left:50%;top:68%;transform:translateX(-50%);font-size:17px;background:rgba(0,0,0,.5);padding:5px 14px;border:2px solid #ffd24a}
 .slot.locked{opacity:.35}
+#setup{background:rgba(15,14,10,.94);touch-action:pan-y}
+@media (max-height:520px){.chip{font-size:12px;padding:4px 8px}.gl{font-size:10px;margin-bottom:2px}.grp{margin:4px 0}#setupinfo{font-size:11px;min-height:28px}}
+#setupbox{max-width:900px;width:100%;text-align:left;cursor:default}
+.grp{margin:7px 0}
+.gl{font-size:12px;letter-spacing:3px;color:#9aa07a;margin-bottom:4px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:14px;padding:6px 12px;background:rgba(0,0,0,.5);color:#fff;border:2px solid #555;cursor:pointer}
+.chip.on{border-color:#ffd24a;background:rgba(90,107,52,.85)}
+#setupinfo{margin-top:8px;font-size:13px;color:#e8d9a0;min-height:38px;line-height:1.4}
+#cockpitHint{display:none}
 *{box-sizing:border-box;user-select:none}
 html,body{margin:0;height:100%;overflow:hidden;background:#000;font-family:"Courier New",Courier,monospace;color:#fff}
 canvas#c{display:block;width:100%;height:100%}
@@ -126,18 +136,18 @@ body.touch #toasts{top:12%;font-size:14px}
 
 <div id="menu" class="overlay hidden">
   <h1 id="mtitle">BLOCKFRONT 1944</h1>
-  <h2>EIN BLOCK-ABENTEUER IM ZWEITEN WELTKRIEG</h2>
+  <h2 id="mh2">EIN BLOCK-ABENTEUER IM ZWEITEN WELTKRIEG</h2>
   <div class="box">
-    <b>AUFTRAG:</b> Du bist Soldat Nr. 7 einer Vorhut. Kämpfe dich durch das zerstörte Dorf und die Schützengräben,
-    dringe in den feindlichen Gefechtsstand ein und <b>hisse dort die Flagge</b> (E gedrückt halten).<br><br>
+    <b>AUFTRAG:</b> <span id="missionText"></span><br><br>
     <b>WASD</b> bewegen · <b>Leertaste</b> springen · <b>Shift</b> sprinten · <b>Maus</b> umsehen<br>
     <b>Linksklick</b> schießen / Blöcke abbauen · <b>Rechtsklick</b> zielen / Block setzen<br>
     <b>R</b> nachladen · <b>G</b> Handgranate (sprengt Löcher in die Welt!) · <b>1–9 / Mausrad</b> Slot wählen<br>
-    <b>1</b> Gewehr · <b>2</b> Spitzhacke · <b>3</b> Raketenwerfer (Nachschub in Truhen) · <b>4–0</b> Baublöcke<br><b>E</b> Truhe öffnen / Panzer besteigen und aussteigen · Karte oben links zeigt Ziele<br><b>C / Strg</b> ducken (schwerer zu treffen, aber langsam) · <b>T</b> neu spawnen, falls etwas hängt oder buggt<br><br>
-    Fünf Kameraden (blaue Markierung) begleiten dich und schießen auf Feinde. Wie in Minecraft kannst du alles abbauen und Deckung bauen. Feinde hören Schüsse – bleib in Bewegung.
+    <b>1</b> Primärwaffe · <b>2</b> Spitzhacke · <b>3</b> Spezialwaffe (Nachschub in Truhen) · <b>4–0</b> Baublöcke<br><b>E</b> Truhe öffnen / Panzer besteigen und aussteigen · Karte oben links zeigt Ziele<br><b>C / Strg</b> ducken (schwerer zu treffen, aber langsam) · <b>T</b> neu spawnen, falls etwas hängt oder buggt<br><br>
+    Kameraden (blaue Markierung) begleiten dich und schießen auf Feinde. Wie in Minecraft kannst du alles abbauen und Deckung bauen. Feinde hören Schüsse – bleib in Bewegung.
     Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen.
   </div>
   <button class="btn" id="play">SPIELEN</button>
+  <button class="btn hidden" id="newBtn" style="margin-top:10px;background:#3b4f6b;font-size:18px;padding:8px 30px">ANDERER EINSATZ</button>
   <button class="btn hidden" id="respawnBtn" style="margin-top:10px;background:#7a3b2a;font-size:18px;padding:8px 30px">NEU SPAWNEN (falls etwas hängt)</button>
 </div>
 
@@ -161,7 +171,20 @@ body.touch #toasts{top:12%;font-size:14px}
   <div class="tb" id="bRespawn">NEU<br>halten</div>
 </div>
 <div id="rotate">Bitte das Handy quer halten<br>und das Spiel neu antippen.</div>
-<div id="loading">LADE SCHLACHTFELD …</div>
+<div id="setup" class="overlay">
+  <h1>BLOCKFRONT 1944</h1>
+  <h2>EINSATZ PLANEN</h2>
+  <div id="setupbox">
+    <div class="grp"><div class="gl">LAND</div><div class="chips" id="cLand"></div></div>
+    <div class="grp"><div class="gl">EINSATZ</div><div class="chips" id="cMode"></div></div>
+    <div class="grp"><div class="gl">SCHAUPLATZ</div><div class="chips" id="cTheme"></div></div>
+    <div class="grp"><div class="gl">PRIMÄRWAFFE</div><div class="chips" id="cPrim"></div></div>
+    <div class="grp"><div class="gl">SPEZIALWAFFE</div><div class="chips" id="cSpec"></div></div>
+    <div id="setupinfo"></div>
+  </div>
+  <button class="btn" id="startBtn">EINSATZ STARTEN</button>
+</div>
+<div id="loading" class="hidden">LADE SCHLACHTFELD …</div>
 
 <script src="three.min.js"></script>
 <script>
@@ -185,19 +208,53 @@ const clamp=(v,a,b)=>v<a?a:v>b?b:v;
 const lerp=(a,b,t)=>a+(b-a)*t;
 
 /* ---------- Blöcke ---------- */
-const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,LOG:5,PLANKS:6,BRICK:7,SANDBAG:8,CONCRETE:9,METAL:10,WIRE:11,BEDROCK:12};
-const TILES={1:[0,1,2],2:[2,2,2],3:[3,3,3],4:[4,4,4],5:[6,5,6],6:[7,7,7],7:[8,8,8],8:[9,9,9],9:[10,10,10],10:[11,11,11],11:[12,12,12],12:[13,13,13]};
-const OPAQUE=new Uint8Array(256);for(let i=1;i<=12;i++)OPAQUE[i]=i===B.WIRE?0:1;
-const BLOCK_COLOR={1:0x5c7a32,2:0x70523a,3:0x808080,4:0xcebe86,5:0x60442a,6:0xa8844c,7:0xa04836,8:0xb29e68,9:0x86867f,10:0x5c6654,11:0x444444,12:0x383838};
+const B={AIR:0,GRASS:1,DIRT:2,STONE:3,SAND:4,LOG:5,PLANKS:6,BRICK:7,SANDBAG:8,CONCRETE:9,METAL:10,WIRE:11,BEDROCK:12,SNOW:13,LEAVES:14,SANDSTONE:15,ASPHALT:16,ROOF:17};
+const TILES={1:[0,1,2],2:[2,2,2],3:[3,3,3],4:[4,4,4],5:[6,5,6],6:[7,7,7],7:[8,8,8],8:[9,9,9],9:[10,10,10],10:[11,11,11],11:[12,12,12],12:[13,13,13],13:[14,15,2],14:[16,16,16],15:[17,17,17],16:[18,18,18],17:[19,19,19]};
+const OPAQUE=new Uint8Array(256);for(let i=1;i<=17;i++)OPAQUE[i]=i===B.WIRE?0:1;
+const BLOCK_COLOR={1:0x5c7a32,2:0x70523a,3:0x808080,4:0xcebe86,5:0x60442a,6:0xa8844c,7:0xa04836,8:0xb29e68,9:0x86867f,10:0x5c6654,11:0x444444,12:0x383838,13:0xe9eef6,14:0x2f5a2a,15:0xd2b982,16:0x3a3a3d,17:0x8a4a38};
 const BLOCK_NAME={2:'Erde',3:'Stein',6:'Bretter',7:'Ziegel',8:'Sandsack',9:'Beton',10:'Stahl'};
-const HARD={1:.35,2:.25,3:.8,4:.2,5:.6,6:.35,7:.8,8:.25,9:1.3,10:1.6,11:.1};
-const DROP={1:2,2:2,3:3,4:2,5:6,6:6,7:7,8:8,9:9,10:10,11:0};
+const HARD={1:.35,2:.25,3:.8,4:.2,5:.6,6:.35,7:.8,8:.25,9:1.3,10:1.6,11:.1,13:.2,14:.15,15:.7,16:.9,17:.5};
+const DROP={1:2,2:2,3:3,4:2,5:6,6:6,7:7,8:8,9:9,10:10,11:0,13:2,14:0,15:7,16:3,17:6};
+
+/* ---------- Einsatz-Konfiguration ---------- */
+const COUNTRIES={
+  usa:{name:'USA',side:'A',uni:0x7f7b4c,pants:0x625f3e,helm:0x59603f},
+  uk:{name:'Großbritannien',side:'A',uni:0x86784f,pants:0x6a5f40,helm:0x5a5841},
+  ussr:{name:'Sowjetunion',side:'A',uni:0x6f6a3b,pants:0x4f4b34,helm:0x4e5646},
+  fr:{name:'Frankreich',side:'A',uni:0x5d6e8a,pants:0x4a5870,helm:0x4a5f80},
+  de:{name:'Deutschland',side:'X',uni:0x62675a,pants:0x4c4f45,helm:0x44484a},
+  jp:{name:'Japan',side:'X',uni:0x7c7340,pants:0x625b34,helm:0x6a623c}};
+const MODES={
+  assault:{name:'Sturmangriff',desc:'Kämpfe dich durch Dorf und Gräben zum feindlichen Gefechtsstand und hisse dort die Flagge.',text:'Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (E gedrückt halten am Mast).'},
+  trench:{name:'Grabenkampf',desc:'Ein verzweigtes Grabensystem mit Stacheldraht und Maschinengewehr-Nestern bis zum Kommandobunker.',text:'Erobere Graben für Graben das feindliche Stellungssystem und <b>hisse die Flagge</b> im Kommandobunker.'},
+  urban:{name:'Häuserkampf',desc:'Eine zerstörte Stadt: Straßen, Barrikaden, Gegner in den Häusern, Hauptquartier in der Mitte.',text:'Säubere die Stadt Haus für Haus und <b>hisse die Flagge</b> im Hauptquartier in der Stadtmitte.'},
+  defense:{name:'Verteidigung',desc:'Halte deine befestigte Stellung gegen 6 immer größere Angriffswellen.',text:'Halte die Stellung! Schlage <b>6 Angriffswellen</b> zurück – baue Deckung, nutze Panzer und Raketen.'},
+  air:{name:'Luftkampf',desc:'Du sitzt im Jagdflugzeug. Blick = Flugrichtung. Schieße 8 feindliche Flugzeuge ab.',text:'Fliege den Einsatz! Schieße <b>8 feindliche Flugzeuge</b> ab. Du fliegst dorthin, wohin du schaust; W/S = Gas.'}};
+const THEMES={
+  europe:{name:'Europa (Frühling)',desc:'Wiesen, Ruinen aus Ziegel, tote Bäume.',fog:0xb9b4a0,sky:['#5d6d7a','#8a948f'],wall:B.BRICK,roof:B.PLANKS,tree:'dead',trees:30,sub:B.DIRT,top:(s,h)=>s>.62?B.DIRT:s<.22?B.SAND:B.GRASS},
+  winter:{name:'Winter (Ostfront)',desc:'Schnee, Tannen und eisiger Nebel.',fog:0xd3dbe4,sky:['#8a97a6','#b9c3cf'],wall:B.BRICK,roof:B.SNOW,tree:'pine',trees:42,sub:B.DIRT,top:(s,h)=>s>.8?B.DIRT:B.SNOW},
+  desert:{name:'Wüste (Nordafrika)',desc:'Sand, Sandstein-Häuser und wenige Palmen.',fog:0xe0c89a,sky:['#9fb0b8','#d8c9a8'],wall:B.SANDSTONE,roof:B.SANDSTONE,tree:'palm',trees:12,sub:B.SAND,top:(s,h)=>s>.72?B.DIRT:B.SAND},
+  jungle:{name:'Dschungel (Pazifik)',desc:'Dichter Wald aus Laubbäumen, feuchter Dunst.',fog:0x93a88e,sky:['#5f7a72','#8ea68f'],wall:B.PLANKS,roof:B.LEAVES,tree:'jungle',trees:80,sub:B.DIRT,top:(s,h)=>s>.78?B.DIRT:B.GRASS},
+  coast:{name:'Küste (Landung)',desc:'Strand, Betonbauten und Palmen.',fog:0xbccad5,sky:['#6b8aa6','#a6bccb'],wall:B.CONCRETE,roof:B.CONCRETE,tree:'palm',trees:16,sub:B.DIRT,top:(s,h)=>h<=12?B.SAND:(s>.72?B.DIRT:B.GRASS)}};
+const PRIMARIES={
+  rifle:{name:'Karabiner',desc:'Präzise und kräftig: 8 Schuss, gute Reichweite.',mag:8,res:40,cd:.32,dmg:45,head:100,spread:.004,auto:true,reload:2,zoom:40,pellets:1,range:160,kick:1,snd:'rifle',noise:48,model:'rifle'},
+  smg:{name:'Maschinenpistole',desc:'Schnelles Dauerfeuer, 30 Schuss, geringer Schaden pro Treffer.',mag:30,res:150,cd:.085,dmg:17,head:34,spread:.018,auto:true,reload:1.8,zoom:62,pellets:1,range:90,kick:.4,snd:'enemy',noise:40,model:'smg'},
+  mg:{name:'Leichtes MG',desc:'50 Schuss Dauerfeuer, lange Nachladezeit.',mag:50,res:200,cd:.1,dmg:24,head:45,spread:.012,auto:true,reload:3.4,zoom:55,pellets:1,range:140,kick:.6,snd:'rifle',noise:55,model:'mg'},
+  sniper:{name:'Scharfschützengewehr',desc:'Ein Schuss, starke Vergrößerung beim Zielen, 5 Patronen.',mag:5,res:25,cd:1,dmg:95,head:200,spread:.0006,auto:false,reload:2.8,zoom:18,pellets:1,range:240,kick:1.6,snd:'sniper',noise:70,model:'sniper'},
+  shotgun:{name:'Schrotflinte',desc:'Verheerend im Nahkampf: 8 Schrotkugeln pro Schuss, 6 Patronen.',mag:6,res:30,cd:.75,dmg:14,head:28,spread:.05,auto:false,reload:2.4,zoom:60,pellets:8,range:40,kick:1.5,snd:'shotgun',noise:45,model:'shotgun'}};
+const SPECIALS={
+  rocket:{name:'Raketenwerfer',desc:'Panzerfaust-artige Raketen mit großem Explosionskrater. Startet mit 4 Raketen.',start:4,chest:4,label:'Raketen'},
+  flame:{name:'Flammenwerfer',desc:'Dauerfeuer auf kurze Distanz, verbrennt Gegner und Stacheldraht. Treibstoff 100 %.',start:100,chest:50,label:'Treibstoff'}};
+let CFG={country:'usa',mode:'assault',theme:'europe',primary:'rifle',special:'rocket',enemy:'de'};
+let THEME=THEMES.europe,W1=PRIMARIES.rifle,SPEC=SPECIALS.rocket;
+const PAL={friend:COUNTRIES.usa,enemy:COUNTRIES.de};
+const dk=(c,f)=>(Math.floor((c>>16&255)*f)<<16)|(Math.floor((c>>8&255)*f)<<8)|Math.floor((c&255)*f);
 
 /* ---------- Textur-Atlas (16x16 Pixel pro Kachel) ---------- */
 const atlasCanvas=(()=>{
-  const cv=document.createElement('canvas');cv.width=cv.height=64;const g=cv.getContext('2d');const r=mulberry32(1944);
+  const cv=document.createElement('canvas');cv.width=128;cv.height=64;const g=cv.getContext('2d');const r=mulberry32(1944);
   const cl=v=>Math.max(0,Math.min(255,v|0));
-  const P=(t,x,y,c,v=1)=>{g.fillStyle=`rgb(${cl(c[0]*v)},${cl(c[1]*v)},${cl(c[2]*v)})`;g.fillRect((t&3)*16+x,(t>>2)*16+y,1,1)};
+  const P=(t,x,y,c,v=1)=>{g.fillStyle=`rgb(${cl(c[0]*v)},${cl(c[1]*v)},${cl(c[2]*v)})`;g.fillRect((t&7)*16+x,(t>>3)*16+y,1,1)};
   const NF=(t,c,a)=>{for(let y=0;y<16;y++)for(let x=0;x<16;x++)P(t,x,y,c,1+(r()-.5)*a)};
   NF(0,[92,122,50],.4);for(let i=0;i<14;i++)P(0,r()*16|0,r()*16|0,[60,88,34]);
   NF(1,[112,82,54],.35);for(let x=0;x<16;x++){const h=3+(r()*2|0);for(let y=0;y<h;y++)P(1,x,y,[92,122,50],1+(r()-.5)*.4)}
@@ -219,10 +276,16 @@ const atlasCanvas=(()=>{
   [[2,2],[13,2],[2,13],[13,13]].forEach(p=>P(11,p[0],p[1],[150,160,140]));
   for(let i=0;i<16;i++){P(12,i,i,[72,72,72]);P(12,15-i,i,[72,72,72]);if(i%5===2){P(12,i,3,[150,150,150]);P(12,i,12,[150,150,150])}}
   NF(13,[56,56,56],.7);
+  NF(14,[238,241,248],.07);for(let i=0;i<10;i++)P(14,r()*16|0,r()*16|0,[205,216,232]);
+  NF(15,[112,82,54],.35);for(let x=0;x<16;x++){const h=3+(r()*2|0);for(let y=0;y<h;y++)P(15,x,y,[238,241,248],1+(r()-.5)*.08)}
+  NF(16,[44,92,40],.45);for(let i=0;i<24;i++)P(16,r()*16|0,r()*16|0,[26,64,26]);for(let i=0;i<10;i++)P(16,r()*16|0,r()*16|0,[80,132,62]);
+  NF(17,[212,188,132],.1);for(let x=0;x<16;x++)for(let y=3;y<16;y+=5)P(17,x,y,[170,148,100]);for(let i=0;i<8;i++)P(17,r()*16|0,r()*16|0,[184,160,110]);
+  NF(18,[62,62,66],.12);for(let i=0;i<16;i++)P(18,r()*16|0,r()*16|0,[84,84,88]);for(let x=0;x<16;x+=4)P(18,x,15,[110,110,100]);
+  for(let y=0;y<16;y++)for(let x=0;x<16;x++){const row=y>>2,off=(row%2)*4;let v=1+(r()-.5)*.12;if(y%4===3||(x+off)%8===7)v=.7;P(19,x,y,[150,70,50],v)}
   return cv})();
 const atlasTex=new THREE.CanvasTexture(atlasCanvas);
 atlasTex.magFilter=THREE.NearestFilter;atlasTex.minFilter=THREE.NearestFilter;atlasTex.generateMipmaps=false;
-function tileCanvas(t,sz=16){const c=document.createElement('canvas');c.width=c.height=sz;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(atlasCanvas,(t&3)*16,(t>>2)*16,16,16,0,0,sz,sz);return c}
+function tileCanvas(t,sz=16){const c=document.createElement('canvas');c.width=c.height=sz;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.drawImage(atlasCanvas,(t&7)*16,(t>>3)*16,16,16,0,0,sz,sz);return c}
 function tileTex(t){const x=new THREE.CanvasTexture(tileCanvas(t));x.magFilter=x.minFilter=THREE.NearestFilter;x.generateMipmaps=false;return x}
 
 /* ---------- Welt ---------- */
@@ -238,32 +301,41 @@ function markDirty(x,z){const cx=x>>4,cz=z>>4;dirty.add(cx+cz*NCX);
   if((z&15)===0&&cz>0)dirty.add(cx+(cz-1)*NCX);if((z&15)===15&&cz<NCZ-1)dirty.add(cx+(cz+1)*NCX)}
 function setB(x,y,z,id){if(x<0||z<0||x>=W||z>=D||y<0||y>=H)return;blocks[BI(x,y,z)]=id;markDirty(x,z)}
 function fillBox(x0,y0,z0,x1,y1,z1,id){for(let y=y0;y<=y1;y++)for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++)setB(x,y,z,id)}
-function fillColumn(x,z,h,top){for(let y=0;y<H;y++){let id=0;if(y===0)id=B.BEDROCK;else if(y<h-3)id=B.STONE;else if(y<h)id=B.DIRT;else if(y===h)id=top;blocks[BI(x,y,z)]=id}heights[HI(x,z)]=h}
+let SUB=B.DIRT;
+function fillColumn(x,z,h,top){for(let y=0;y<H;y++){let id=0;if(y===0)id=B.BEDROCK;else if(y<h-3)id=B.STONE;else if(y<h)id=SUB;else if(y===h)id=top;blocks[BI(x,y,z)]=id}heights[HI(x,z)]=h}
 const gH=(x,z)=>heights[HI(Math.floor(x),Math.floor(z))];
 
-const START={x:14,z:14},VILL={x:44,z:44},BASE={x:72,z:72},TANKZ={x:76,z:46};
+const START={x:14,z:14},VILL={x:44,z:44},BASE={x:72,z:72},TANKZ={x:76,z:46},SPAWN={x:12.5,z:12.5};
 const distTo=(x,z,p)=>Math.hypot(x-p.x,z-p.z);
 function inZone(x,z,pad=0){return distTo(x,z,START)<14+pad||distTo(x,z,VILL)<16+pad||distTo(x,z,BASE)<19+pad||distTo(x,z,TANKZ)<9+pad}
 
+function setupLayout(){
+  const L={assault:{s:[14,14],v:[44,44],b:[72,72],t:[76,46]},trench:{s:[14,14],v:[-200,-200],b:[76,76],t:[26,20]},
+    urban:{s:[14,14],v:[-200,-200],b:[48,48],t:[19.5,34.5]},defense:{s:[-200,-200],v:[-200,-200],b:[48,48],t:[62,36]},
+    air:{s:[-200,-200],v:[-200,-200],b:[-200,-200],t:[-200,-200]}}[CFG.mode];
+  Object.assign(START,{x:L.s[0],z:L.s[1]});Object.assign(VILL,{x:L.v[0],z:L.v[1]});Object.assign(BASE,{x:L.b[0],z:L.b[1]});Object.assign(TANKZ,{x:L.t[0],z:L.t[1]});
+  if(CFG.mode==='defense'){SPAWN.x=BASE.x-7.5;SPAWN.z=BASE.z+.5}else if(CFG.mode==='air'){SPAWN.x=48;SPAWN.z=48}else{SPAWN.x=START.x-1.5;SPAWN.z=START.z-1.5}}
 function generateWorld(){
-  const hf=new Float32Array(W*D);const base=(x,z)=>10+fbm(x,z)*11;
+  const M=CFG.mode;
+  const hf=new Float32Array(W*D);const base=(x,z)=>M==='urban'?12:M==='air'?6+fbm(x,z)*7:10+fbm(x,z)*11;
   for(let z=0;z<D;z++)for(let x=0;x<W;x++)hf[HI(x,z)]=base(x,z);
   const flatten=(c,r,bl,add=0)=>{const tg=Math.round(base(c.x,c.z))+add;
     for(let z=0;z<D;z++)for(let x=0;x<W;x++){const d=Math.hypot(x-c.x,z-c.z);if(d<r+bl){let t=d<r?1:1-(d-r)/bl;t=t*t*(3-2*t);hf[HI(x,z)]=lerp(hf[HI(x,z)],tg,t)}}};
-  flatten(START,10,8);flatten(VILL,13,8);flatten(BASE,15,8,2);
+  if(M==='assault'){flatten(START,10,8);flatten(VILL,13,8);flatten(BASE,15,8,2)}
+  else if(M==='trench'){flatten(START,10,8);flatten(BASE,15,8,2)}
+  else if(M==='defense'){flatten(BASE,22,8)}
   const hi=new Int16Array(W*D);for(let i=0;i<W*D;i++)hi[i]=Math.round(hf[i]);
-  // Krater
-  for(let i=0;i<34;i++){const cx=4+rnd()*(W-8),cz=4+rnd()*(D-8);if(inZone(cx,cz,2))continue;
+  const nCr=(M==='urban'||M==='air')?0:M==='defense'?22:34;
+  for(let i=0;i<nCr;i++){const cx=4+rnd()*(W-8),cz=4+rnd()*(D-8);if(inZone(cx,cz,2))continue;
     const r=2+rnd()*3.2,dep=r*.95;
     for(let z=Math.floor(cz-r-2);z<=cz+r+2;z++)for(let x=Math.floor(cx-r-2);x<=cx+r+2;x++){
       if(x<0||z<0||x>=W||z>=D)continue;const d=Math.hypot(x-cx,z-cz);
       if(d<r){hi[HI(x,z)]-=Math.round(dep*(1-(d/r)*(d/r)));craterMask[HI(x,z)]=1}
       else if(d<r+1.2&&rnd()<.5)hi[HI(x,z)]+=1}}
-  // Randgebirge
-  for(let z=0;z<D;z++)for(let x=0;x<W;x++){const e=Math.min(x,z,W-1-x,D-1-z);if(e<5)hi[HI(x,z)]+=(5-e)*3}
+  if(M!=='air')for(let z=0;z<D;z++)for(let x=0;x<W;x++){const e=Math.min(x,z,W-1-x,D-1-z);if(e<5)hi[HI(x,z)]+=(5-e)*3}
   for(let z=0;z<D;z++)for(let x=0;x<W;x++){
     const h=clamp(hi[HI(x,z)],3,H-14);const s=vnoise(x*.08+100,z*.08);
-    let top=s>.62?B.DIRT:s<.22?B.SAND:B.GRASS;if(craterMask[HI(x,z)])top=B.DIRT;
+    let top=THEME.top(s,h);if(craterMask[HI(x,z)])top=B.DIRT;
     fillColumn(x,z,h,top)}
 }
 
@@ -287,11 +359,11 @@ function house(x0,z0,w,d,doorSide){
   for(let z=z0;z<z0+d;z++)for(let x=x0;x<x0+w;x++){
     const wall=x===x0||x===x0+w-1||z===z0||z===z0+d-1;
     if(wall){for(let y=g+1;y<=g+4;y++){
-      const along=(x===x0||x===x0+w-1)?z-z0:x-x0;let id=B.BRICK;
+      const along=(x===x0||x===x0+w-1)?z-z0:x-x0;let id=THEME.wall;
       if(y>=g+2&&y<=g+3&&along%4===2)id=0;                    // Fenster
       if(rnd()<(y>=g+4?.42:.1))id=0;                          // zerschossen
       setB(x,y,z,id)}}
-    if(rnd()>.33)setB(x,g+5,z,B.PLANKS);}                      // löchriges Dach
+    if(rnd()>.33)setB(x,g+5,z,THEME.roof);}                      // löchriges Dach
   const mx=x0+(w>>1),mz=z0+(d>>1);
   if(doorSide===0){setB(mx,g+1,z0,0);setB(mx,g+2,z0,0)}else if(doorSide===1){setB(mx,g+1,z0+d-1,0);setB(mx,g+2,z0+d-1,0)}
   else if(doorSide===2){setB(x0,g+1,mz,0);setB(x0,g+2,mz,0)}else{setB(x0+w-1,g+1,mz,0);setB(x0+w-1,g+2,mz,0)}
@@ -312,33 +384,24 @@ function buildCamp(){
   sandWall(8,19,20,19,2,6);sandWall(20,8,20,19,2,6);
   sandWall(7,7,7,12,1);sandWall(7,7,12,7,1);
 }
-function buildBase(){
-  const C=BASE,g=heights[HI(C.x,C.z)];
-  const x0=67,x1=77,z0=67,z1=77;
+function buildBase(C,opts={}){
+  const g=heights[HI(C.x,C.z)],x0=C.x-5,x1=C.x+5,z0=C.z-5,z1=C.z+5;
   for(let y=g;y<=g+7;y++)for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){
     const wall=x===x0||x===x1||z===z0||z===z1;let id=0;
     if(y===g)id=B.PLANKS;else if(y<=g+5)id=wall?B.CONCRETE:0;else if(y===g+6)id=B.CONCRETE;
     setB(x,y,z,id)}
-  fillBox(x0,g+1,71,x0,g+3,73,0);                              // Tor (West)
-  for(const zz of [69,75])fillBox(x0,g+3,zz,x0,g+4,zz,0);      // Schießscharten
-  for(const xx of [69,75])fillBox(xx,g+3,z0,xx,g+4,z0,0);
-  for(const zz of [69,75])fillBox(x1,g+3,zz,x1,g+4,zz,0);
-  for(const xx of [69,75])fillBox(xx,g+3,z1,xx,g+4,z1,0);
-  fillBox(70,g+1,70,71,g+1,71,B.SANDBAG);                      // Deckung innen
-  fillBox(74,g+1,69,75,g+1,69,B.SANDBAG);
-  fillBox(72,g+1,76,73,g+1,76,B.PLANKS);
-  // Fahnenmast innen
-  fillBox(74,g+1,74,74,g+4,74,B.METAL);
-  // Landmarke auf dem Dach
-  fillBox(72,g+7,72,72,g+14,72,B.METAL);
-  // Sandsack-Ring
-  sandWall(62,62,82,62,2,8);sandWall(62,82,82,82,2,8);sandWall(62,62,62,82,2,8);sandWall(82,62,82,82,2,8);
-  // Stacheldraht
-  for(let t=57;t<=88;t++)if(t%10<8){for(const y of [1,2]){setB(57,heights[HI(57,t)]+y,t,B.WIRE);setB(t,heights[HI(t,57)]+y,57,B.WIRE)}}
-  // Wachturm
-  for(const p of [[79,63],[81,63],[79,65],[81,65]])fillBox(p[0],g+1,p[1],p[0],g+7,p[1],B.LOG);
-  fillBox(79,g+8,63,81,g+8,65,B.PLANKS);
-  for(let z=63;z<=65;z++)for(let x=79;x<=81;x++)if(!(x===80&&z===64))setB(x,g+9,z,B.SANDBAG);
+  fillBox(x0,g+1,C.z-1,x0,g+3,C.z+1,0);
+  for(const zz of [C.z-3,C.z+3]){fillBox(x0,g+3,zz,x0,g+4,zz,0);fillBox(x1,g+3,zz,x1,g+4,zz,0)}
+  for(const xx of [C.x-3,C.x+3]){fillBox(xx,g+3,z0,xx,g+4,z0,0);fillBox(xx,g+3,z1,xx,g+4,z1,0)}
+  fillBox(C.x-2,g+1,C.z-2,C.x-1,g+1,C.z-1,B.SANDBAG);fillBox(C.x+2,g+1,C.z-3,C.x+3,g+1,C.z-3,B.SANDBAG);fillBox(C.x,g+1,C.z+4,C.x+1,g+1,C.z+4,B.PLANKS);
+  fillBox(C.x+2,g+1,C.z+2,C.x+2,g+4,C.z+2,B.METAL);
+  fillBox(C.x,g+7,C.z,C.x,g+14,C.z,B.METAL);
+  sandWall(C.x-10,C.z-10,C.x+10,C.z-10,2,8);sandWall(C.x-10,C.z+10,C.x+10,C.z+10,2,8);sandWall(C.x-10,C.z-10,C.x-10,C.z+10,2,8);sandWall(C.x+10,C.z-10,C.x+10,C.z+10,2,8);
+  if(opts.wire!==false)for(let t=0;t<32;t++)if(t%10<8){const ax=C.x-15,az=C.z-15+t,bx=C.x-15+t,bz=C.z-15;
+    for(const y of [1,2]){setB(ax,heights[HI(ax,az)]+y,az,B.WIRE);setB(bx,heights[HI(bx,bz)]+y,bz,B.WIRE)}}
+  for(const q of [[7,-9],[9,-9],[7,-7],[9,-7]])fillBox(C.x+q[0],g+1,C.z+q[1],C.x+q[0],g+7,C.z+q[1],B.LOG);
+  fillBox(C.x+7,g+8,C.z-9,C.x+9,g+8,C.z-7,B.PLANKS);
+  for(let z=C.z-9;z<=C.z-7;z++)for(let x=C.x+7;x<=C.x+9;x++)if(!(x===C.x+8&&z===C.z-8))setB(x,g+9,z,B.SANDBAG);
   return g}
 
 /* ---------- Chunk-Meshes ---------- */
@@ -356,7 +419,7 @@ function buildChunk(cx,cz){
       const nb=getB(x+nx,y+ny,z+nz);
       if(OPAQUE[nb])continue;if(!OPAQUE[id]&&nb===id)continue;
       const uA=s>0?(a+1)%3:(a+2)%3,vA=s>0?(a+2)%3:(a+1)%3;
-      const tile=f===2?T[0]:f===3?T[2]:T[1];const tc=tile&3,tr=tile>>2;const sh=FSHADE[f];
+      const tile=f===2?T[0]:f===3?T[2]:T[1];const tc=tile&7,tr=tile>>3;const sh=FSHADE[f];
       const bx=x+(a===0&&s>0?1:0),by=y+(a===1&&s>0?1:0),bz=z+(a===2&&s>0?1:0);
       for(let c=0;c<4;c++){
         const i=(c===1||c===2)?1:0,j=c>=2?1:0;
@@ -367,7 +430,7 @@ function buildChunk(cx,cz){
         const o1=occ(px+e1[0],py+e1[1],pz+e1[2]),o2=occ(px+e2[0],py+e2[1],pz+e2[2]),oc=occ(px+e1[0]+e2[0],py+e1[1]+e2[1],pz+e1[2]+e2[2]);
         const ao=(o1&&o2)?0:3-(o1+o2+oc);aos[c]=ao;const br=sh*AOB[ao];col.push(br,br,br);
         let tu,tv;if(a===0){tu=offA[2];tv=offA[1]}else if(a===1){tu=offA[0];tv=offA[2]}else{tu=offA[0];tv=offA[1]}
-        uv.push((tc+.01+tu*.98)/4,1-(tr+1)/4+(.01+tv*.98)/4)}
+        uv.push((tc+.01+tu*.98)/8,1-(tr+1)/4+(.01+tv*.98)/4)}
       if(aos[0]+aos[2]>aos[1]+aos[3])idx.push(vc,vc+1,vc+2,vc,vc+2,vc+3);else idx.push(vc+1,vc+2,vc+3,vc+1,vc+3,vc);
       vc+=4}}
   const k=cx+cz*NCX;let m=chunkMesh[k];
@@ -458,13 +521,14 @@ function sfx(k,v=1){if(!AC)return;switch(k){
   case'hurt':tone(230,90,.2,.5,'sawtooth');break;
   case'pick':tone(500,900,.08,.3,'triangle');tone(900,1300,.08,.3,'triangle',.08);break;
   case'rocket':noiseB(.7,3500,300,.8*v,'bandpass',.6);tone(200,60,.25,.5*v);break;
+  case'shotgun':noiseB(.4,1800,150,1.1*v,'bandpass',.5);tone(110,40,.18,.9*v);break;
   case'pin':noiseB(.04,3500,3500,.4,'highpass');break}}
 
 /* ---------- Spielzustand ---------- */
 const P={x:12.5,y:20,z:12.5,vx:0,vy:0,vz:0,w:.3,h:1.8,onGround:false,bx:false,landV:0};
 let yaw=-Math.PI*.75,pitch=0,hp=100,dead=false,locked=false,started=false,gameTime=0,kills=0,missionDone=false;
 let mag=8,reserve=40,grenades=3,reloading=0,fireCd=0,gCd=0,ads=0,adsTarget=false,kick=0,shake=0,swing=0,bobT=0,placeCd=0;
-const RELOAD=2.0,MAGSIZE=8;
+let RELOAD=2.0,MAGSIZE=8;
 const keys={};let crouching=false,crouchToggle=false,eyeH=1.62;let hasLauncher=true,rockets=4,rocketCd=0,inTank=false,tankCd=0,smoke2=null;const joy={x:0,y:0,sprint:false};let adsToggle=false;let lmb=false,rmb=false;
 const inv={3:0,2:12,6:24,7:16,8:48,9:12,10:4};
 const slots=[{t:'rifle'},{t:'pick'},{t:'rocket'},{t:'block',id:8},{t:'block',id:6},{t:'block',id:7},{t:'block',id:9},{t:'block',id:3},{t:'block',id:2},{t:'block',id:10}];
@@ -494,7 +558,7 @@ const SG={leg:boxGeo(.22,.75,.24,-.375),torso:boxGeo(.52,.72,.28),head:boxGeo(.3
 function makeSoldier(sniper,ally){
   const g=new THREE.Group();g.rotation.order='YXZ';const mats=[];
   const M=c=>{const m=new THREE.MeshLambertMaterial({color:c});mats.push(m);return m};
-  const uni=ally?0x8c7b4f:sniper?0x4e5446:0x6a6e58,pants=ally?0x6b6040:sniper?0x3e4238:0x55574a,hc=ally?0x56653a:0x4c514b;
+  const pal=ally?PAL.friend:PAL.enemy;const uni=sniper?dk(pal.uni,.78):pal.uni,pants=sniper?dk(pal.pants,.8):pal.pants,hc=pal.helm;
   const mk=(geo,mat,x,y,z)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,y,z);g.add(m);return m};
   const legL=mk(SG.leg,M(pants),-.13,.75,0),legR=mk(SG.leg,M(pants),.13,.75,0);
   mk(SG.torso,M(uni),0,1.11,0);
@@ -614,24 +678,42 @@ const fmtTime=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 function fireRifle(){
   if(reloading>0||fireCd>0)return;
   if(mag<=0){if(reserve>0)startReload();else{sfx('click');fireCd=.3}return}
-  mag--;fireCd=.32;kick=1;shake+=.012;sfx('rifle');
-  const sp=Math.hypot(P.vx,P.vz);const spread=(ads>.5?.0007:.004)+(sp>1?.012:0)+(P.onGround?0:.02);
-  const f=forwardVec();let dx=f[0]+(Math.random()-.5)*spread*2,dy=f[1]+(Math.random()-.5)*spread*2,dz=f[2]+(Math.random()-.5)*spread*2;
-  const L=Math.hypot(dx,dy,dz);dx/=L;dy/=L;dz/=L;
-  const ox=P.x,oy=P.y+eyeH,oz=P.z;
-  const bh=voxelRay(ox,oy,oz,dx,dy,dz,160,0);const tb=bh?bh.t:160;
-  let best=tb,be=null,head=false;
-  for(const e of enemies){if(e.dead)continue;const t=rayAABB(ox,oy,oz,dx,dy,dz,e.x-.32,e.y,e.z-.32,e.x+.32,e.y+1.85,e.z+.32);
-    if(t>=0&&t<best){best=t;be=e;head=(oy+dy*t)>=e.y+1.45}}
+  mag--;fireCd=W1.cd;kick=W1.kick;shake+=.012*W1.kick;sfx(W1.snd);
+  const sp=Math.hypot(P.vx,P.vz);const spread=(ads>.5?W1.spread*.2:W1.spread)+(sp>1?.012:0)+(P.onGround?0:.02);
+  const f=forwardVec();const ox=P.x,oy=P.y+eyeH,oz=P.z;
   const rx=Math.cos(yaw),rz=-Math.sin(yaw);
   const mx=ox+f[0]*.7+rx*.18*(1-ads),my=oy-.14*(1-ads)+f[1]*.7,mz=oz+f[2]*.7+rz*.18*(1-ads);
-  const ex=ox+dx*best,ey=oy+dy*best,ez=oz+dz*best;
-  spawnTracer(mx,my,mz,ex,ey,ez);
-  vmFlash=.05;
-  if(be){damageEnemy(be,head?100:45,head);hitMark(head);for(let i=0;i<7;i++)spawnP(ex,ey,ez,(Math.random()-.5)*3,Math.random()*2.5,(Math.random()-.5)*3,0xa01010,.08,.5);sfx('hit')}
-  else if(bh){debris(ex-dx*.05,ey-dy*.05,ez-dz*.05,BLOCK_COLOR[bh.id]||0x888888,5,2.5)}
-  alertEnemies(P.x,P.z,48);
+  let hitAny=false,headAny=false;
+  for(let pe=0;pe<W1.pellets;pe++){
+    let dx=f[0]+(Math.random()-.5)*spread*2,dy=f[1]+(Math.random()-.5)*spread*2,dz=f[2]+(Math.random()-.5)*spread*2;
+    const L=Math.hypot(dx,dy,dz);dx/=L;dy/=L;dz/=L;
+    const bh=voxelRay(ox,oy,oz,dx,dy,dz,W1.range,0);const tb=bh?bh.t:W1.range;
+    let best=tb,be=null,head=false;
+    for(const e of enemies){if(e.dead)continue;const t=rayAABB(ox,oy,oz,dx,dy,dz,e.x-.32,e.y,e.z-.32,e.x+.32,e.y+1.85,e.z+.32);
+      if(t>=0&&t<best){best=t;be=e;head=(oy+dy*t)>=e.y+1.45}}
+    const ex=ox+dx*best,ey=oy+dy*best,ez=oz+dz*best;
+    if(pe<3)spawnTracer(mx,my,mz,ex,ey,ez);
+    if(be){damageEnemy(be,head?W1.head:W1.dmg,head);hitAny=true;if(head)headAny=true;for(let i=0;i<4;i++)spawnP(ex,ey,ez,(Math.random()-.5)*3,Math.random()*2.5,(Math.random()-.5)*3,0xa01010,.08,.5)}
+    else if(bh&&pe<4){debris(ex-dx*.05,ey-dy*.05,ez-dz*.05,BLOCK_COLOR[bh.id]||0x888888,4,2.5)}}
+  vmFlash=.05;if(hitAny){hitMark(headAny);sfx('hit')}
+  alertEnemies(P.x,P.z,W1.noise);
   if(mag===0&&reserve>0)setTimeout(()=>{if(mag===0&&reloading<=0&&slots[sel].t==='rifle')startReload()},250)}
+let flameDmgT=0,flameWarn=0;
+function fireFlame(dt){
+  flameWarn=Math.max(0,flameWarn-dt);
+  if(rockets<=0){if(flameWarn<=0){toast('Kein Treibstoff mehr!');flameWarn=2}return}
+  rockets=Math.max(0,rockets-dt*20);
+  const f=forwardVec();const ox=P.x+f[0]*.8,oy=P.y+eyeH-.2+f[1]*.8,oz=P.z+f[2]*.8;
+  for(let i=0;i<3;i++){const sp=10+Math.random()*4;spawnP(ox,oy,oz,f[0]*sp+(Math.random()-.5)*2.4,f[1]*sp+(Math.random()-.5)*2.4+.5,f[2]*sp+(Math.random()-.5)*2.4,[0xffcc33,0xff7711,0xffee88][i%3],.3+Math.random()*.25,.4,-1,.6)}
+  kick=Math.max(kick,.15);
+  flameDmgT-=dt;
+  if(flameDmgT<=0){flameDmgT=.1;if(Math.random()<.5)noiseB(.25,900,300,.35,'lowpass');
+    for(const e of enemies){if(e.dead)continue;const dx=e.x-P.x,dy=(e.y+1)-(P.y+eyeH),dz=e.z-P.z,d=Math.hypot(dx,dy,dz);
+      if(d>9||(dx*f[0]+dy*f[1]+dz*f[2])/d<.86)continue;
+      if(voxelRay(P.x,P.y+eyeH,P.z,dx/d,dy/d,dz/d,d,0))continue;
+      damageEnemy(e,9,false)}
+    const hit=voxelRay(P.x,P.y+eyeH,P.z,f[0],f[1],f[2],8,1);if(hit&&hit.id===B.WIRE)setB(hit.x,hit.y,hit.z,0);
+    alertEnemies(P.x,P.z,28)}}
 function startReload(){if(inTank||reloading>0||mag>=MAGSIZE||reserve<=0||slots[sel].t!=='rifle')return;reloading=RELOAD;sfx('reload')}
 function finishReload(){const n=Math.min(MAGSIZE-mag,reserve);mag+=n;reserve-=n}
 function hitMark(head){const h=document.getElementById('hitmark');h.className=head?'head':'';h.style.opacity=1;hmT=.18}
@@ -770,6 +852,7 @@ function fireRocket(){
   for(let i=0;i<8;i++)spawnP(P.x-f[0]*.8,P.y+eyeH-.2,P.z-f[2]*.8,-f[0]*2+(Math.random()-.5)*2,Math.random()*1.5,-f[2]*2+(Math.random()-.5)*2,0x999999,.25,.7,-.2,.4);
   alertEnemies(P.x,P.z,70)}
 function fireTank(){
+  if(TANK.kind==='plane'){firePlane();return}
   if(tankCd>0)return;tankCd=1.8;kick=1.2;shake+=.05;sfx('rocket');
   const f=forwardVec();spawnRocket(P.x+f[0]*3.2,P.y+eyeH-.75+f[1]*3.2,P.z+f[2]*3.2,f,46,true);alertEnemies(P.x,P.z,80)}
 function updateRockets(dt){
@@ -796,7 +879,7 @@ function makeChest(x,y,z,kind){
   g.position.set(x,y,z);scene.add(g);chests.push({x,y,z,kind,opened:false,lid,t:0,g})}
 function openChest(c){c.opened=true;sfx('pick');
   if(c.kind==='launcher'){hasLauncher=true;rockets+=3;toast('RAKETENWERFER gefunden! +3 Raketen (Slot 3)');selectSlot(2)}
-  else{rockets+=4;toast('+4 Raketen');spawnItem('med',c.x+1.2,c.y,c.z)}
+  else{rockets+=SPEC.chest;toast('+'+SPEC.chest+(CFG.special==='flame'?' % Treibstoff':' Raketen'));spawnItem('med',c.x+1.2,c.y,c.z)}
   buildHotbar();for(let i=0;i<12;i++)spawnP(c.x,c.y+.7,c.z,(Math.random()-.5)*2,1+Math.random()*2,(Math.random()-.5)*2,0xffd24a,.1,.8,8)}
 function updateChests(dt){for(const c of chests)if(c.opened&&c.t<1){c.t=Math.min(1,c.t+dt*2.5);c.lid.rotation.x=-c.t*1.9}}
 // Panzer
@@ -823,6 +906,7 @@ function moveTank(T,dt){
   if(collides(T.x,n,T.z,T.w,T.h)){if(T.vy<0){T.onGround=true;T.y=Math.floor(n)+1}else T.y=Math.floor(n+T.h)-T.h-.001;T.vy=0}else T.y=n}
 function updateTank(dt){
   const T=TANK;if(!T.alive||!T.g)return;
+  if(T.kind==='plane'){if(inTank)updatePlane(dt);return}
   if(inTank){
     const f=[-Math.sin(yaw),-Math.cos(yaw)],r=[Math.cos(yaw),-Math.sin(yaw)];
     let mx=(keys.KeyD?1:0)-(keys.KeyA?1:0)+joy.x,mz=(keys.KeyW?1:0)-(keys.KeyS?1:0)+joy.y;const len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len}
@@ -850,13 +934,13 @@ function leaveTank(forced){
   for(const t of tries){const px=T.x+t[0],pz=T.z+t[1];if(!collides(px,T.y,pz,.3,1.8)){P.x=px;P.z=pz;P.y=T.y;done=true;break}}
   if(!done){P.x=T.x;P.z=T.z;P.y=T.y+2.4}
   P.vx=P.vy=P.vz=0;labelButtons();if(!forced)toast('Ausgestiegen')}
-function destroyTank(){const T=TANK;if(inTank)leaveTank(true);T.alive=false;T.g.visible=false;smoke2={x:T.x,y:T.y+1.5,z:T.z};toast('Dein Panzer wurde zerstört!');explode(T.x,T.y+1,T.z,3.6,150,7)}
+function destroyTank(){if(TANK.kind==='plane'){planeCrash();return}const T=TANK;if(inTank)leaveTank(true);T.alive=false;T.g.visible=false;smoke2={x:T.x,y:T.y+1.5,z:T.z};toast('Dein Panzer wurde zerstört!');explode(T.x,T.y+1,T.z,3.6,150,7)}
 function interact(){if(dead||!locked)return;
-  if(inTank){leaveTank(false);return}
+  if(inTank){if(TANK.kind==='plane'){toast('Im Flug kannst du nicht aussteigen');return}leaveTank(false);return}
   const c=nearChest();if(c){openChest(c);return}
   if(nearTank())enterTank()}
 function updatePrompt(){const el=document.getElementById('prompt');let t='';
-  if(inTank)t='[E] Aussteigen';else if(nearChest())t='[E] Truhe öffnen';else if(nearTank())t='[E] Panzer besteigen';
+  if(inTank)t=TANK.kind==='plane'?'':'[E] Aussteigen';else if(nearChest())t='[E] Truhe öffnen';else if(nearTank())t='[E] Panzer besteigen';
   if(t){el.textContent=t;el.classList.remove('hidden')}else el.classList.add('hidden')}
 // Minikarte
 const mm=document.getElementById('minimap'),mg=mm.getContext('2d');mm.width=mm.height=IS_TOUCH?96:128;let mmBg=null;
@@ -877,97 +961,298 @@ function drawMinimap(){
   if(TANK.alive&&!inTank&&TANK.g){mg.save();mg.translate(TANK.x*S,TANK.z*S);mg.rotate(Math.PI/2-TANK.yaw);mg.fillStyle='#7dd35b';mg.strokeStyle='#000';mg.fillRect(-3.4*u,-2*u,6.8*u,4*u);mg.strokeRect(-3.4*u,-2*u,6.8*u,4*u);mg.restore()}
   // Spieler
   mg.fillStyle='#4aa3ff';mg.strokeStyle='#000';mg.lineWidth=1;for(const a of allies){if(a.dead)continue;mg.beginPath();mg.arc(a.x*S,a.z*S,1.8*u,0,6.283);mg.fill();mg.stroke()}
+  for(const q of planes){if(q.dead||q.gone)continue;mg.fillStyle=q.enemy?'#ff4d4d':'#4aa3ff';mg.strokeStyle='#000';mg.beginPath();mg.arc(q.x*S,q.z*S,2.2*u,0,6.283);mg.fill();mg.stroke()}
   mg.save();mg.translate(P.x*S,P.z*S);mg.rotate(Math.atan2(-Math.cos(yaw),-Math.sin(yaw)));mg.fillStyle='#fff';mg.strokeStyle='#000';mg.lineWidth=1;
   mg.beginPath();mg.moveTo(4*u,0);mg.lineTo(-3*u,-3*u);mg.lineTo(-1.5*u,0);mg.lineTo(-3*u,3*u);mg.closePath();mg.fill();mg.stroke();mg.restore()}
 
 /* ---------- Flagge ---------- */
 const FLAG={x:74.5,z:74.5,prog:0,done:false};
 let flagCloth=null,flagTop=0,flagBot=0,roofCloth=null,flagTex=null;
-function flagTexture(allied){const c=document.createElement('canvas');c.width=48;c.height=30;const g=c.getContext('2d');
-  if(!allied){g.fillStyle='#161616';g.fillRect(0,0,48,30);g.fillStyle='#a31616';g.fillRect(0,11,48,8);g.fillStyle='#ddd';g.fillRect(0,9,48,2);g.fillRect(0,19,48,2)}
-  else{g.fillStyle='#4f6b2a';g.fillRect(0,0,48,30);g.fillStyle='#fff';g.font='bold 26px monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('★',24,16)}
+function flagTexture(kind){const c=document.createElement('canvas');c.width=48;c.height=30;const g=c.getContext('2d');
+  const R=(col,x,y,w,h)=>{g.fillStyle=col;g.fillRect(x,y,w,h)};
+  if(kind==='usa'){for(let i=0;i<7;i++)R(i%2?'#f2f2f2':'#b22234',0,Math.floor(i*30/7),48,5);R('#3c3b6e',0,0,22,16);for(let y=2;y<15;y+=4)for(let x=2;x<21;x+=4)R('#fff',x,y,1,1)}
+  else if(kind==='uk'){R('#1d2f6f',0,0,48,30);R('#f2f2f2',0,11,48,8);R('#f2f2f2',20,0,8,30);R('#c8102e',0,13,48,4);R('#c8102e',22,0,4,30)}
+  else if(kind==='ussr'){R('#c0272d',0,0,48,30);g.fillStyle='#ffd700';g.font='bold 14px monospace';g.textAlign='center';g.textBaseline='middle';g.fillText('★',10,9)}
+  else if(kind==='fr'){R('#1f3f9e',0,0,16,30);R('#f2f2f2',16,0,16,30);R('#d3262a',32,0,16,30)}
+  else if(kind==='de'){R('#161616',0,0,48,10);R('#f2f2f2',0,10,48,10);R('#8a8a8a',0,20,48,10)}
+  else{R('#efe6cf',0,0,48,30);R('#b8222a',20,0,8,30)}
   const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t}
 function setupFlag(gBase){
   const geo=new THREE.PlaneGeometry(1.7,1.06);geo.translate(.85,0,0);
-  flagCloth=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:flagTexture(false),side:THREE.DoubleSide}));
-  flagTop=gBase+3.6;flagBot=gBase+1.7;flagCloth.position.set(75.0,flagTop,74.5);scene.add(flagCloth);
-  roofCloth=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:flagTexture(false),side:THREE.DoubleSide}));
-  roofCloth.position.set(73.0,gBase+13.4,72.5);scene.add(roofCloth);flagBase=gBase}
+  FLAG.x=BASE.x+2.5;FLAG.z=BASE.z+2.5;FLAG.prog=0;FLAG.done=CFG.mode==='defense';
+  const kind=FLAG.done?CFG.country:CFG.enemy;
+  flagCloth=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:flagTexture(kind),side:THREE.DoubleSide}));
+  flagTop=gBase+3.6;flagBot=gBase+1.7;flagCloth.position.set(FLAG.x+.5,flagTop,FLAG.z);scene.add(flagCloth);
+  roofCloth=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:flagTexture(kind),side:THREE.DoubleSide}));
+  roofCloth.position.set(BASE.x+1,gBase+13.4,BASE.z+.5);scene.add(roofCloth);flagBase=gBase}
 let flagBase=0;
+function winMission(title,sub){
+  if(missionDone)return;missionDone=true;
+  const b=document.getElementById('banner');b.innerHTML=`${title}<small>${sub} · Zeit ${fmtTime(gameTime)} · ${kills} Abschüsse – spiel weiter!</small>`;b.style.transition='none';b.style.opacity=1;
+  setTimeout(()=>{b.style.transition='opacity 3s';b.style.opacity=0},6500);sfx('pick');tone(400,800,.3,.4,'triangle');tone(600,1200,.4,.4,'triangle',.2)}
 function updateFlag(dt){
-  const near=!FLAG.done&&Math.hypot(P.x-FLAG.x,P.z-FLAG.z)<3&&Math.abs(P.y-(flagBase+1))<3;
+  if(!flagCloth)return;
+  const capMode=CFG.mode==='assault'||CFG.mode==='trench'||CFG.mode==='urban';
+  const near=capMode&&!FLAG.done&&!inTank&&Math.hypot(P.x-FLAG.x,P.z-FLAG.z)<3&&Math.abs(P.y-(flagBase+1))<3;
   const capEl=document.getElementById('capture');
   if(near&&keys.KeyE){FLAG.prog=Math.min(1,FLAG.prog+dt/5)}else FLAG.prog=Math.max(0,FLAG.prog-dt/2.5);
   capEl.classList.toggle('hidden',!(near||FLAG.prog>0)||FLAG.done);
   document.querySelector('#capbar i').style.width=FLAG.prog*100+'%';
   if(!FLAG.done){flagCloth.position.y=flagTop-FLAG.prog*(flagTop-flagBot);
-    if(FLAG.prog>=1){FLAG.done=true;missionDone=true;flagCloth.material.map=flagTexture(true);flagCloth.material.needsUpdate=true;
-      roofCloth.material.map=flagTexture(true);roofCloth.material.needsUpdate=true;
-      const b=document.getElementById('banner');b.innerHTML=`MISSION ERFÜLLT<small>Flagge gehisst · Zeit ${fmtTime(gameTime)} · ${kills} Abschüsse – spiel weiter und bau dir deine Festung!</small>`;b.style.transition='none';b.style.opacity=1;
-      setTimeout(()=>{b.style.transition='opacity 3s';b.style.opacity=0},6500);sfx('pick');tone(400,800,.3,.4,'triangle');tone(600,1200,.4,.4,'triangle',.2)}}
+    if(FLAG.prog>=1){FLAG.done=true;flagCloth.material.map=flagTexture(CFG.country);flagCloth.material.needsUpdate=true;
+      roofCloth.material.map=flagTexture(CFG.country);roofCloth.material.needsUpdate=true;winMission('MISSION ERFÜLLT','Flagge gehisst')}}
   else{flagCloth.position.y=Math.min(flagTop,flagCloth.position.y+dt*1.2)}
   const w=Math.sin(gameTime*3)*.2;flagCloth.rotation.y=w;roofCloth.rotation.y=Math.sin(gameTime*2.4+1)*.25}
 
 /* ---------- Welt bauen ---------- */
 let tankSmoke=null;
-function buildWorld(){
-  generateWorld();
-  carveTrench(50,52,66,53);carveTrench(60,56,61,66);carveTrench(22,40,34,41);
-  buildCamp();
-  const gB=buildBase();
-  [[35,35,7,6,1],[46,36,6,6,2],[36,47,6,7,0],[47,47,7,6,0]].forEach(h=>house(h[0],h[1],h[2],h[3],h[4]));
-  {const tx=76,tz=46,g0=heights[HI(tx,tz)];for(let z=tz-6;z<=tz+6;z++)for(let x=tx-6;x<=tx+6;x++)fillColumn(x,z,g0,B.DIRT);initTank(tx+.5,g0+1,tz+.5)}
-  const tg=wreckedTank(28,66);tankSmoke={x:28,y:tg+4.5,z:67};
-  // Deckung & Draht im Niemandsland
-  for(let i=0;i<14;i++){const x=10+(rnd()*76|0),z=10+(rnd()*76|0);if(distTo(x,z,START)<13||distTo(x,z,BASE)<19||distTo(x,z,TANKZ)<10)continue;
+const planes=[];let airKills=0;const AIR_TARGET=8;const WV={n:0,total:6,t:8};
+function levelArea(cx,cz,r,top=B.DIRT){const fx=Math.floor(cx),fz=Math.floor(cz),g=heights[HI(fx,fz)];
+  for(let z=fz-r;z<=fz+r;z++)for(let x=fx-r;x<=fx+r;x++)if(x>0&&z>0&&x<W-1&&z<D-1)fillColumn(x,z,g,top);return g}
+function placeTank(){const g0=levelArea(TANKZ.x,TANKZ.z,6);initTank(Math.floor(TANKZ.x)+.5,g0+1,Math.floor(TANKZ.z)+.5)}
+function plantTree(x,z,style){
+  const g=heights[HI(x,z)];const hh=style==='jungle'?6+(rnd()*4|0):style==='pine'?5+(rnd()*3|0):style==='palm'?5+(rnd()*3|0):4+(rnd()*3|0);
+  for(let y=1;y<=hh;y++)setB(x,g+y,z,B.LOG);
+  if(style==='dead'){
+    for(let b=0;b<3;b++){const dx=[1,-1,0,0][rnd()*4|0],dz=dx===0?(rnd()<.5?1:-1):0,by=g+hh-1-(rnd()*2|0);if(getB(x+dx,by,z+dz)===0)setB(x+dx,by,z+dz,B.LOG);if(rnd()<.6&&getB(x+dx*2,by+1,z+dz*2)===0)setB(x+dx*2,by+1,z+dz*2,B.LOG)}}
+  else if(style==='pine'){for(let l=0;l<5;l++){const y=g+hh-3+l,r=l<2?2:l<4?1:0;for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++)if(Math.abs(dx)+Math.abs(dz)<=r&&!(dx===0&&dz===0&&l<4))setB(x+dx,y,z+dz,B.LEAVES)}setB(x,g+hh+2,z,B.SNOW)}
+  else if(style==='palm'){for(const d of [[1,0],[-1,0],[0,1],[0,-1]]){setB(x+d[0],g+hh,z+d[1],B.LEAVES);setB(x+d[0]*2,g+hh,z+d[1]*2,B.LEAVES);setB(x+d[0]*3,g+hh-1,z+d[1]*3,B.LEAVES)}setB(x,g+hh+1,z,B.LEAVES)}
+  else{for(let dy=0;dy<2;dy++){const r=2-dy;for(let dx=-r;dx<=r;dx++)for(let dz=-r;dz<=r;dz++){if(r===2&&Math.abs(dx)===2&&Math.abs(dz)===2)continue;if(dx===0&&dz===0&&dy===0)continue;setB(x+dx,g+hh+dy,z+dz,B.LEAVES)}}}}
+function plantTrees(n){let c=0;for(let a=0;a<600&&c<n;a++){const x=7+(rnd()*82|0),z=7+(rnd()*82|0);if(inZone(x,z,2))continue;
+  const g=heights[HI(x,z)];const top=getB(x,g,z);if(top!==B.GRASS&&top!==B.DIRT&&top!==B.SNOW&&top!==B.SAND)continue;if(getB(x,g+1,z)!==0)continue;
+  plantTree(x,z,THEME.tree);c++}}
+function scatterCover(nWalls,nWire){
+  for(let i=0;i<nWalls;i++){const x=10+(rnd()*76|0),z=10+(rnd()*76|0);if(inZone(x,z,0))continue;
     const horiz=rnd()<.5;sandWall(x,z,horiz?x+2+(rnd()*2|0):x,horiz?z:z+2+(rnd()*2|0),2)}
-  for(let i=0;i<9;i++){const x=12+(rnd()*70|0),z=12+(rnd()*70|0);if(distTo(x,z,START)<14||distTo(x,z,BASE)<19||distTo(x,z,TANKZ)<10)continue;
-    const horiz=rnd()<.5,L=6+(rnd()*5|0);for(let t=0;t<L;t++){const xx=horiz?x+t:x,zz=horiz?z:z+t;if(xx<W-1&&zz<D-1&&getB(xx,heights[HI(xx,zz)]+1,zz)===0)setB(xx,heights[HI(xx,zz)]+1,zz,B.WIRE)}}
-  // Tote Bäume
-  let trees=0;for(let a=0;a<200&&trees<30;a++){const x=7+(rnd()*82|0),z=7+(rnd()*82|0);if(inZone(x,z,2))continue;
-    const g=heights[HI(x,z)];const top=getB(x,g,z);if(top!==B.GRASS&&top!==B.DIRT)continue;if(getB(x,g+1,z)!==0)continue;
-    const hh=4+(rnd()*3|0);for(let y=1;y<=hh;y++)setB(x,g+y,z,B.LOG);
-    for(let b=0;b<3;b++){const dx=[1,-1,0,0][rnd()*4|0],dz=dx===0?(rnd()<.5?1:-1):0,by=g+hh-1-(rnd()*2|0);if(getB(x+dx,by,z+dz)===0)setB(x+dx,by,z+dz,B.LOG);if(rnd()<.6&&getB(x+dx*2,by+1,z+dz*2)===0)setB(x+dx*2,by+1,z+dz*2,B.LOG)}
-    trees++}
-  for(let k=0;k<NCX*NCZ;k++)dirty.add(k);
-  setupFlag(gB);
+  for(let i=0;i<nWire;i++){const x=12+(rnd()*70|0),z=12+(rnd()*70|0);if(inZone(x,z,0))continue;
+    const horiz=rnd()<.5,L=6+(rnd()*5|0);for(let t=0;t<L;t++){const xx=horiz?x+t:x,zz=horiz?z:z+t;if(xx<W-1&&zz<D-1&&getB(xx,heights[HI(xx,zz)]+1,zz)===0)setB(xx,heights[HI(xx,zz)]+1,zz,B.WIRE)}}}
+const spawnE=(x,z,o)=>spawnEnemy(x,z,o);
+const spawnI=(t,x,z,y)=>spawnItem(t,x,y!==undefined?y:gH(x,z)+1,z);
+function spawnSquad(n){P.x=SPAWN.x;P.z=SPAWN.z;P.y=gH(SPAWN.x,SPAWN.z)+1;
+  for(let i=0;i<n;i++)spawnAlly(SPAWN.x+2+Math.cos(i*1.26)*2.5,SPAWN.z+2+Math.sin(i*1.26)*2.5,i)}
+function campItems(){const S=SPAWN;spawnI('ammo',S.x+4,S.z+1);spawnI('ammo',S.x+1,S.z+4);spawnI('med',S.x+5,S.z+4);spawnI('gren',S.x+3,S.z+5)}
+function baseSquad(C,gB){
+  [[-5.5,-7.5],[-8.5,.5],[-5.5,8.5],[.5,-8.5]].forEach(q=>spawnE(C.x+q[0],C.z+q[1],{pr:2}));
+  [[-1.5,.5],[1.5,-1.5],[.5,3.5],[4.5,4.5]].forEach((q,i)=>spawnE(C.x+q[0],C.z+q[1],{pr:i===3?1.5:2}));
+  spawnE(C.x+8.5,C.z-7.5,{sniper:true,y:gB+9,yaw:Math.atan2(-1,-1)});
+  spawnI('ammo',C.x-7.5,C.z-3.5);spawnI('med',C.x-7.5,C.z+4.5);spawnI('med',C.x-3.5,C.z-10.5);spawnI('gren',C.x-1.5,C.z-6.5);
+  spawnI('ammo',C.x+.5,C.z-2.5,gB+1);spawnI('med',C.x+3.5,C.z-1.5,gB+1)}
+
+function buildAssault(){
+  carveTrench(50,52,66,53);carveTrench(60,56,61,66);carveTrench(22,40,34,41);
+  buildCamp();const gB=buildBase(BASE);
+  [[35,35,7,6,1],[46,36,6,6,2],[36,47,6,7,0],[47,47,7,6,0]].forEach(h=>house(h[0],h[1],h[2],h[3],h[4]));
+  placeTank();
+  const tg=wreckedTank(28,66);tankSmoke={x:28,y:tg+4.5,z:67};
+  scatterCover(14,9);plantTrees(THEME.trees);setupFlag(gB);
   {const g=heights[HI(38,50)];fillBox(37,g+1,49,40,g+2,51,0);makeChest(38.5,g+1,50.5,'rockets');const g2=heights[HI(33,63)];makeChest(33.5,g2+1,63.5,'rockets')}
-  buildMinimapBg();
-  // Spieler
-  P.x=12.5;P.z=12.5;P.y=gH(12,12)+1;
-  for(let i=0;i<5;i++)spawnAlly(14.5+Math.cos(i*1.26)*2.5,14.5+Math.sin(i*1.26)*2.5,i);
-  // Gegner
-  const E=(x,z,o)=>spawnEnemy(x,z,o);
-  E(40.5,42.5,{pr:6});E(48.5,40.5,{pr:6});E(41.5,52.5,{pr:6});E(51.5,50.5,{pr:6});
-  E(52.5,52.5,{pr:.8});E(58.5,53.5,{pr:.8});E(64.5,52.5,{pr:.8});E(60.5,60.5,{pr:.6});
-  E(25.5,40.5,{pr:.8});E(31.5,41.5,{pr:.8});
-  E(66.5,64.5,{pr:2});E(63.5,72.5,{pr:2});E(66.5,80.5,{pr:2});E(72.5,63.5,{pr:2});
-  E(70.5,72.5,{pr:2});E(73.5,70.5,{pr:2});E(72.5,75.5,{pr:2});E(76.5,76.5,{pr:1.5});
-  E(70.5,44.5,{pr:2});E(81.5,49.5,{pr:2});
-  E(80.5,64.5,{sniper:true,y:gB+9,yaw:Math.atan2(-1,-1)});
-  // Nachschub
-  const I=(t,x,z,y)=>spawnItem(t,x,y!==undefined?y:gH(x,z)+1,z);
-  I('ammo',16.5,13.5);I('ammo',13.5,16.5);I('med',17.5,16.5);I('gren',15.5,17.5);
-  I('ammo',38.5,38.5);I('med',49.5,39.5);I('ammo',39.5,50.5);I('gren',50.5,50.5);I('med',44.5,44.5);
-  I('ammo',28.5,40.5);I('ammo',29.5,63.5);I('gren',56.5,53.5);I('med',64.5,59.5);
-  I('ammo',64.5,68.5);I('med',64.5,76.5);I('med',68.5,61.5);I('gren',70.5,65.5);
-  I('ammo',72.5,69.5,gB+1);I('med',75.5,70.5,gB+1)}
+  spawnSquad(5);
+  spawnE(40.5,42.5,{pr:6});spawnE(48.5,40.5,{pr:6});spawnE(41.5,52.5,{pr:6});spawnE(51.5,50.5,{pr:6});
+  spawnE(52.5,52.5,{pr:.8});spawnE(58.5,53.5,{pr:.8});spawnE(64.5,52.5,{pr:.8});spawnE(60.5,60.5,{pr:.6});
+  spawnE(25.5,40.5,{pr:.8});spawnE(31.5,41.5,{pr:.8});spawnE(70.5,44.5,{pr:2});spawnE(81.5,49.5,{pr:2});
+  baseSquad(BASE,gB);campItems();
+  spawnI('ammo',38.5,38.5);spawnI('med',49.5,39.5);spawnI('ammo',39.5,50.5);spawnI('gren',50.5,50.5);spawnI('med',44.5,44.5);
+  spawnI('ammo',28.5,40.5);spawnI('ammo',29.5,63.5);spawnI('gren',56.5,53.5);spawnI('med',64.5,59.5)}
+
+function buildTrench(){
+  const T=[[20,28,78,29],[14,40,70,41],[24,52,80,53],[12,64,64,65],[36,28,37,41],[60,40,61,53],[30,52,31,65]];
+  T.forEach(t=>carveTrench(t[0],t[1],t[2],t[3]));
+  for(const q of [[20,24,78],[14,36,70],[24,48,80],[12,60,64]])for(let x=q[0];x<=q[2];x++)if(x%9<7)for(const y of [1,2]){const gy=heights[HI(x,q[1])]+y;if(getB(x,gy,q[1])===0)setB(x,gy,q[1],B.WIRE)}
+  buildCamp();const gB=buildBase(BASE);placeTank();
+  const tg=wreckedTank(48,34);tankSmoke={x:48,y:tg+4.5,z:35};
+  scatterCover(8,4);plantTrees(THEME.trees);setupFlag(gB);
+  makeChest(52.5,heights[HI(52,37)]+1,37.5,'rockets');makeChest(40.5,heights[HI(40,46)]+1,46.5,'rockets');
+  spawnSquad(5);
+  T.slice(0,4).forEach(t=>{let k=0;for(let x=t[0]+8;x<t[2]-4;x+=14,k++)spawnE(x+.5,t[1]+(k%2)+.5,{pr:.8})});
+  baseSquad(BASE,gB);campItems();
+  [[38,28],[52,40],[66,52],[30,64]].forEach((q,i)=>spawnI(i%2?'med':'ammo',q[0]+.5,q[1]+.5));
+  spawnI('gren',58.5,46.5);spawnI('ammo',36.5,46.5)}
+
+function cityHouse(x0,z0,w,d,floors,door){
+  const g=heights[HI(x0+1,z0+1)],top=floors===2?g+10:g+5;
+  for(let y=g;y<=top+1;y++)for(let z=z0;z<z0+d;z++)for(let x=x0;x<x0+w;x++)setB(x,y,z,y===g?B.PLANKS:0);
+  for(let f=0;f<floors;f++){const bs=g+f*5;
+    for(let z=z0;z<z0+d;z++)for(let x=x0;x<x0+w;x++){const wall=x===x0||x===x0+w-1||z===z0||z===z0+d-1;if(!wall)continue;
+      const along=(x===x0||x===x0+w-1)?z-z0:x-x0;
+      for(let y=bs+1;y<=bs+4;y++){let id=THEME.wall;if(y>=bs+2&&y<=bs+3&&along%3===1&&along>0&&along<8)id=0;if(rnd()<(y>=bs+4?.38:.08))id=0;setB(x,y,z,id)}}}
+  if(floors===2){for(let z=z0;z<z0+d;z++)for(let x=x0;x<x0+w;x++){const hole=z===z0+1&&x>=x0+1&&x<=x0+4;setB(x,g+5,z,hole?0:B.PLANKS)}
+    for(let i=0;i<5;i++)fillBox(x0+1+i,g+1,z0+1,x0+1+i,g+1+i,z0+1,B.PLANKS)}
+  for(let z=z0;z<z0+d;z++)for(let x=x0;x<x0+w;x++)if(rnd()>.28)setB(x,top,z,THEME.roof);
+  const mx=x0+(w>>1),mz=z0+(d>>1);
+  if(door===0)fillBox(mx,g+1,z0,mx,g+3,z0,0);else if(door===1)fillBox(mx,g+1,z0+d-1,mx,g+3,z0+d-1,0);else if(door===2)fillBox(x0,g+1,mz,x0,g+3,mz,0);else fillBox(x0+w-1,g+1,mz,x0+w-1,g+3,mz,0);
+  for(let i=0;i<10;i++){const x=x0-2+(rnd()*(w+4)|0),z=z0-2+(rnd()*(d+4)|0);if(x<0||z<0||x>=W||z>=D)continue;const gy=heights[HI(x,z)]+1;
+    if(getB(x,gy,z)===0&&getB(x,gy-1,z)!==B.ASPHALT)setB(x,gy,z,rnd()<.7?THEME.wall:B.STONE)}}
+function buildUrban(){
+  const C=BASE;const isStreet=(x,z)=>x<8||z<8||x>=77||z>=77||((x-8)%15)>=9||((z-8)%15)>=9;
+  for(let z=5;z<D-5;z++)for(let x=5;x<W-5;x++)if(isStreet(x,z))blocks[BI(x,heights[HI(x,z)],z)]=B.ASPHALT;
+  buildCamp();const gB=buildBase(C,{wire:false});
+  const lots=[];
+  for(const lx of [8,23,38,53,68])for(const lz of [8,23,38,53,68]){
+    if(Math.abs(lx+4-C.x)<14&&Math.abs(lz+4-C.z)<14)continue;if(lx<22&&lz<22)continue;
+    const fl=rnd()<.5?2:1;cityHouse(lx,lz,9,9,fl,(rnd()*4)|0);lots.push({lx,lz,fl,g:heights[HI(lx+1,lz+1)]})}
+  for(let i=0;i<22;i++){const x=9+(rnd()*76|0),z=9+(rnd()*76|0);if(!isStreet(x,z)||distTo(x,z,START)<13||(Math.abs(x-C.x)<12&&Math.abs(z-C.z)<12))continue;
+    if(rnd()<.5)sandWall(x,z,x+2,z,2);else fillBox(x,heights[HI(x,z)]+1,z,x+2,heights[HI(x,z)]+1,z,B.METAL)}
+  placeTank();setupFlag(gB);
+  for(const c of [[23,23],[68,23]]){const g=heights[HI(c[0]+4,c[1]+4)];fillBox(c[0]+3,g+1,c[1]+3,c[0]+5,g+2,c[1]+5,0);makeChest(c[0]+4.5,g+1,c[1]+4.5,'rockets')}
+  spawnSquad(5);
+  lots.forEach(l=>{if(rnd()<.45)spawnE(l.lx+5.5,l.lz+6.5,{pr:1.5});if(l.fl===2&&rnd()<.5)spawnE(l.lx+6.5,l.lz+6.5,{pr:.5,y:l.g+6})});
+  for(let n=0,t=0;n<6&&t<300;t++){const x=9+(rnd()*76|0),z=9+(rnd()*76|0);if(!isStreet(x,z)||distTo(x,z,START)<26||(Math.abs(x-C.x)<14&&Math.abs(z-C.z)<14))continue;spawnE(x+.5,z+.5,{pr:4});n++}
+  baseSquad(C,gB);campItems();
+  lots.filter((l,i)=>i%3===0).forEach((l,i)=>spawnI(i%2?'med':'ammo',l.lx+6.5,l.lz+6.5,l.g+1))}
+
+function buildDefense(){
+  const C=BASE;const gB=buildBase(C);placeTank();
+  scatterCover(10,6);plantTrees(THEME.trees);setupFlag(gB);
+  const gc=heights[HI(C.x,C.z)];
+  makeChest(C.x-8.5,gc+1,C.z+8.5,'rockets');makeChest(C.x+8.5,gc+1,C.z+8.5,'rockets');
+  spawnSquad(7);
+  spawnI('ammo',C.x-8.5,C.z-3.5);spawnI('ammo',C.x-8.5,C.z+4.5);spawnI('med',C.x+8.5,C.z-3.5);spawnI('med',C.x+8.5,C.z+4.5);spawnI('gren',C.x-3.5,C.z+8.5);spawnI('gren',C.x+3.5,C.z-8.5);
+  WV.n=0;WV.t=8}
+function startWave(){
+  WV.n++;const n=5+WV.n*3;toast(`Welle ${WV.n} von ${WV.total}!`);
+  for(let i=0;i<n;i++){const a=rnd()*6.283,r=34+rnd()*8;
+    const x=clamp(Math.floor(BASE.x+Math.cos(a)*r),8,W-9),z=clamp(Math.floor(BASE.z+Math.sin(a)*r),8,D-9);
+    const e=spawnEnemy(x+.5,z+.5,{pr:0});e.alert=1e6;e.lastX=BASE.x;e.lastZ=BASE.z}
+  for(const a of allies)if(a.dead){a.dead=false;a.hp=100;a.g.rotation.x=0;if(a.marker)a.marker.visible=true;for(const m of a.mats)m.emissive.setHex(0);a.x=BASE.x-6;a.z=BASE.z+a.slot-3;a.y=heights[HI(Math.floor(a.x),Math.floor(a.z))]+1}
+  WV.t=60}
+function updateWaves(dt){
+  if(CFG.mode!=='defense'||missionDone)return;
+  const alive=enemies.filter(e=>!e.dead).length;
+  if(WV.n<WV.total){WV.t-=dt;if(WV.t<=0||(WV.n>0&&alive<=2&&WV.t<55))startWave()}
+  else if(alive===0)winMission('STELLUNG GEHALTEN','Alle 6 Wellen zurückgeschlagen')}
+
+let camRoll=0,planeId=0,airSpawnT=3,allyPlaneT=20,planesSpawned=0;
+function groundTop(x,z,y0){let y=Math.min(H-1,Math.floor(y0)+3);for(;y>=0;y--)if(isSolid(Math.floor(x),y,Math.floor(z)))return y+1;return 1}
+function makePlaneMesh(enemy){
+  const pal=enemy?PAL.enemy:PAL.friend;const g=new THREE.Group();g.rotation.order='YXZ';
+  const add=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color:c}));m.position.set(x,y,z);g.add(m);return m};
+  add(.8,.8,4.6,pal.uni,0,0,0);add(7,.14,1.4,pal.helm,0,.05,.3);add(2.6,.12,.9,pal.helm,0,.15,-1.9);add(.12,1,.9,pal.helm,0,.6,-1.9);
+  add(.55,.4,1.1,0x9cc6e0,0,.5,.3);add(.9,.9,.3,enemy?0xb02020:0x2a62c8,0,0,2.35);
+  g.userData.prop=add(.12,2.2,.12,0x222222,0,0,2.55);scene.add(g);return g}
+function spawnPlane(x,y,z,enemy,yaw){
+  const g=makePlaneMesh(enemy);const pl={id:planeId++,g,x,y,z,yaw,pit:0,roll:0,speed:15,hp:enemy?60:90,enemy,dead:false,fallT:0,wp:null,fireCd:1+Math.random(),burst:0,tgt:null,tT:0,breakT:0,vx:0,vy:0,vz:0,formation:planeId%2?1:-1,gone:false};
+  g.position.set(x,y,z);planes.push(pl);return pl}
+function spawnEdgePlane(enemy){const side=(rnd()*4)|0;const x=side<2?(side?W-9:9):10+rnd()*76,z=side>=2?(side===3?D-9:9):10+rnd()*76;
+  const gt=groundTop(x,z,20);spawnPlane(x,Math.min(H-6,gt+18+rnd()*10),z,enemy,Math.atan2(48-x,48-z));if(enemy)planesSpawned++}
+function buildAir(){
+  plantTrees(Math.max(THEME.trees,20));scatterCover(6,0);
+  for(const q of [[20,20],[76,22],[22,74],[74,76],[48,20],[48,76]]){const g=heights[HI(q[0],q[1])];fillBox(q[0]-1,g+1,q[1]-1,q[0]+1,g+6,q[1]+1,B.CONCRETE);fillBox(q[0]-1,g+7,q[1]-1,q[0]+1,g+7,q[1]+1,B.SANDBAG)}
+  spawnSquad(0);
+  for(let i=0;i<6;i++){const x=14+rnd()*68,z=14+rnd()*68;spawnPlane(x,Math.min(H-6,groundTop(x,z,20)+16+rnd()*12),z,true,rnd()*6.28);planesSpawned++}
+  for(let i=0;i<2;i++)spawnPlane(40+i*16,30,40,false,0)}
+function resetPlane(){
+  const T=TANK;Object.assign(T,{kind:'plane',alive:true,hp:300,speed:20,pit:0,yaw:Math.PI/2,roll:0,bumpT:0,x:48,z:48,y:Math.min(H-8,gH(48,48)+18)});
+  if(!T.g)T.g=makePlaneMesh(false);T.g.visible=false;
+  inTank=true;crouching=false;P.h=1.8;eyeH=1;P.x=T.x;P.y=T.y;P.z=T.z;P.vx=P.vy=P.vz=0;yaw=-Math.PI/2;pitch=0;smoke2=null;camRoll=0}
+function planeCrash(){const T=TANK;T.alive=false;if(T.g)T.g.visible=false;explode(T.x,T.y,T.z,2.5,40,5);smoke2={x:T.x,y:T.y,z:T.z};hp=0;die()}
+function updatePlane(dt){
+  const T=TANK;if(!T.alive)return;
+  const fv=forwardVec();const wantYaw=Math.atan2(fv[0],fv[2]),wantPit=Math.asin(clamp(fv[1],-1,1));
+  const dy=((wantYaw-T.yaw+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;
+  const turn=clamp(dy,-1.5*dt,1.5*dt);T.yaw+=turn;
+  T.pit+=clamp(wantPit-T.pit,-1.1*dt,1.1*dt);T.pit=clamp(T.pit,-1.2,1.2);
+  const mz=(keys.KeyW?1:0)-(keys.KeyS?1:0)+joy.y;const tgt=mz>=0?20+Math.min(1,mz)*14:20+Math.max(-1,mz)*9;
+  T.speed+=(tgt-T.speed)*Math.min(1,dt*1.2);
+  T.roll+=(clamp(-turn/Math.max(dt,.001)*.5,-.9,.9)-T.roll)*Math.min(1,dt*4);camRoll=T.roll*.6;
+  const cp=Math.cos(T.pit);
+  T.x+=Math.sin(T.yaw)*cp*T.speed*dt;T.y+=Math.sin(T.pit)*T.speed*dt;T.z+=Math.cos(T.yaw)*cp*T.speed*dt;
+  if(T.x<8||T.x>W-8||T.z<8||T.z>D-8){const wy=Math.atan2(48-T.x,48-T.z);const d2=((wy-T.yaw+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;T.yaw+=clamp(d2,-2*dt,2*dt)}
+  T.x=clamp(T.x,3,W-3);T.z=clamp(T.z,3,D-3);
+  if(T.y>H-3){T.y=H-3;T.pit=Math.min(T.pit,0)}
+  const gt=groundTop(T.x,T.z,T.y);T.bumpT-=dt;
+  if(T.y<gt+1.5){T.y=gt+1.5;T.pit=Math.max(T.pit,.25);if(T.bumpT<=0){T.bumpT=1;damagePlayer(30);if(inTank)toast('Bodenkontakt!')}}
+  P.x=T.x;P.y=T.y;P.z=T.z;P.vx=P.vy=P.vz=0;P.onGround=true;eyeH+=(1-eyeH)*Math.min(1,dt*8);
+  T.g.position.set(T.x,T.y,T.z)}
+function firePlane(){
+  if(tankCd>0)return;tankCd=.08;const f=forwardVec();
+  let dx=f[0]+(Math.random()-.5)*.02,dy=f[1]+(Math.random()-.5)*.02,dz=f[2]+(Math.random()-.5)*.02;const L=Math.hypot(dx,dy,dz);dx/=L;dy/=L;dz/=L;
+  const ox=P.x,oy=P.y+eyeH-.1,oz=P.z;let best=260,hitP=null;
+  for(const pl of planes){if(pl.dead||!pl.enemy)continue;const rx=pl.x-ox,ry=pl.y-oy,rz=pl.z-oz;const t=rx*dx+ry*dy+rz*dz;if(t<5||t>best)continue;
+    const px=rx-dx*t,py=ry-dy*t,pz=rz-dz*t;if(Math.hypot(px,py,pz)<2.6){best=t;hitP=pl}}
+  const bh=voxelRay(ox,oy,oz,dx,dy,dz,best,0);if(bh){best=bh.t;hitP=null}
+  const rx=Math.cos(yaw),rz=-Math.sin(yaw),side=(Math.random()<.5?-1:1)*.55;
+  spawnTracer(ox+rx*side+dx*2,oy-.3+dy*2,oz+rz*side+dz*2,ox+dx*best,oy+dy*best,oz+dz*best,0xffee99);
+  if(hitP){damagePlane(hitP,8,'player');hitMark(false);for(let i=0;i<3;i++)spawnP(hitP.x,hitP.y,hitP.z,(Math.random()-.5)*3,(Math.random()-.5)*3,(Math.random()-.5)*3,0xffaa33,.15,.4,0)}
+  else if(bh)debris(ox+dx*best,oy+dy*best,oz+dz*best,BLOCK_COLOR[bh.id]||0x888888,3,2);
+  sfx('enemy',.3);shake+=.003}
+function planeVel(pl){const cp=Math.cos(pl.pit);pl.vx=Math.sin(pl.yaw)*cp*pl.speed;pl.vy=Math.sin(pl.pit)*pl.speed;pl.vz=Math.cos(pl.yaw)*cp*pl.speed}
+function damagePlane(pl,d,by){if(pl.dead)return;pl.hp-=d;if(pl.hp<=0){pl.dead=true;pl.fallT=0;toast(pl.enemy?'Feindliches Flugzeug abgeschossen!':'Flügelmann abgeschossen!');if(pl.enemy)airKills++}}
+function updatePlaneAI(pl,dt){
+  const gt=groundTop(pl.x,pl.z,pl.y);
+  if(pl.dead){pl.fallT+=dt;pl.pit=Math.max(pl.pit-1.2*dt,-1.1);pl.yaw+=dt*1.5;pl.roll+=dt*3;pl.speed=Math.max(pl.speed,12);planeVel(pl);pl.x+=pl.vx*dt;pl.y+=pl.vy*dt;pl.z+=pl.vz*dt;
+    if(Math.random()<dt*20)spawnP(pl.x,pl.y,pl.z,Math.random()-.5,Math.random()-.5,Math.random()-.5,Math.random()<.5?0x333333:0xff7711,.5,1.2,-.3,.6);
+    if(pl.y<=gt+.5||pl.fallT>6){explode(pl.x,Math.max(pl.y,gt),pl.z,2.5,30,5);scene.remove(pl.g);pl.gone=true;return}
+    pl.g.position.set(pl.x,pl.y,pl.z);pl.g.rotation.set(-pl.pit,pl.yaw,pl.roll);return}
+  pl.tT-=dt;
+  if(pl.tT<=0){pl.tT=.4;let best=null,bd=pl.enemy?150:170;
+    if(pl.enemy){const dp=Math.hypot(TANK.x-pl.x,TANK.y-pl.y,TANK.z-pl.z);
+      if(TANK.alive&&!dead&&inTank&&dp<bd){bd=dp;const cp=Math.cos(TANK.pit);best={x:TANK.x,y:TANK.y,z:TANK.z,player:true,vx:Math.sin(TANK.yaw)*cp*TANK.speed,vy:Math.sin(TANK.pit)*TANK.speed,vz:Math.cos(TANK.yaw)*cp*TANK.speed}}}
+    for(const q of planes){if(q.dead||q.gone||q.enemy===pl.enemy)continue;const d=Math.hypot(q.x-pl.x,q.y-pl.y,q.z-pl.z);if(d<bd){bd=d;best=q}}
+    pl.tgt=best}
+  const T=pl.tgt&&!pl.tgt.dead&&!pl.tgt.gone?pl.tgt:null;
+  let ax,ay,az,rateY=1.15,rateP=.85;
+  if(T){ax=T.x+(T.vx||0)*.5;ay=T.y+(T.vy||0)*.5;az=T.z+(T.vz||0)*.5;
+    if(pl.enemy&&Math.hypot(ax-pl.x,ay-pl.y,az-pl.z)<16)pl.breakT=2.2;
+    if(pl.breakT>0){pl.breakT-=dt;ax=pl.x+(pl.x-T.x)+Math.sin(pl.id+1)*20;az=pl.z+(pl.z-T.z);ay=pl.y+12}}
+  else if(!pl.enemy){const k=pl.formation;ax=TANK.x-Math.sin(TANK.yaw)*14+Math.cos(TANK.yaw)*10*k;az=TANK.z-Math.cos(TANK.yaw)*14-Math.sin(TANK.yaw)*10*k;ay=TANK.y+2;rateY=1.5}
+  else{if(!pl.wp||Math.hypot(pl.wp.x-pl.x,pl.wp.z-pl.z)<10)pl.wp={x:14+rnd()*68,y:Math.min(H-6,gt+14+rnd()*14),z:14+rnd()*68};ax=pl.wp.x;ay=pl.wp.y;az=pl.wp.z}
+  const wy=Math.atan2(ax-pl.x,az-pl.z),wp=Math.atan2(ay-pl.y,Math.hypot(ax-pl.x,az-pl.z));
+  const dY=((wy-pl.yaw+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;const tr=clamp(dY,-rateY*dt,rateY*dt);pl.yaw+=tr;
+  pl.pit+=clamp(wp-pl.pit,-rateP*dt,rateP*dt);pl.pit=clamp(pl.pit,-1,1);
+  pl.roll+=(clamp(-tr/dt*.5,-.8,.8)-pl.roll)*Math.min(1,dt*4);
+  if(pl.y<gt+5)pl.pit=Math.max(pl.pit,.35);if(pl.y>H-4)pl.pit=Math.min(pl.pit,-.2);
+  if(pl.x<10||pl.x>W-10||pl.z<10||pl.z>D-10){const w2=Math.atan2(48-pl.x,48-pl.z);const d2=((w2-pl.yaw+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;pl.yaw+=clamp(d2,-2*dt,2*dt)}
+  pl.speed=pl.enemy?15:(T?18:clamp(TANK.speed*(1+(Math.hypot(ax-pl.x,az-pl.z)-14)*.02),14,30));
+  planeVel(pl);pl.x=clamp(pl.x+pl.vx*dt,3,W-3);pl.y=Math.max(gt+2,pl.y+pl.vy*dt);pl.z=clamp(pl.z+pl.vz*dt,3,D-3);
+  pl.fireCd-=dt;
+  if(T){const d=Math.hypot(T.x-pl.x,T.y-pl.y,T.z-pl.z)||1;const fx=Math.sin(pl.yaw)*Math.cos(pl.pit),fy=Math.sin(pl.pit),fz=Math.cos(pl.yaw)*Math.cos(pl.pit);
+    const dot=((T.x-pl.x)*fx+(T.y-pl.y)*fy+(T.z-pl.z)*fz)/d;
+    if(d<58&&dot>.965&&pl.fireCd<=0){pl.burst++;pl.fireCd=pl.burst%7===0?1.6:.11;const hit=Math.random()<(pl.enemy?.2:.35);
+      spawnTracer(pl.x+fx*2,pl.y+fy*2,pl.z+fz*2,T.x+(hit?0:(Math.random()-.5)*8),T.y+(hit?0:(Math.random()-.5)*6),T.z+(hit?0:(Math.random()-.5)*8),pl.enemy?0xff7a5a:0x7ab8ff);
+      if(hit){if(T.player)damagePlayer(5,pl.x,pl.z);else damagePlane(T,7)}
+      if(T.player)sfx('enemy',clamp(1-d/90,.1,.5))}}
+  pl.g.position.set(pl.x,pl.y,pl.z);pl.g.rotation.set(-pl.pit,pl.yaw,pl.roll);
+  const pr=pl.g.userData.prop;if(pr)pr.rotation.z+=dt*40}
+function updateAir(dt){
+  if(CFG.mode!=='air')return;
+  for(const pl of planes)if(!pl.gone)updatePlaneAI(pl,dt);
+  const eAlive=planes.filter(q=>q.enemy&&!q.dead&&!q.gone).length;
+  if(!missionDone){airSpawnT-=dt;if(airSpawnT<=0&&eAlive<5&&planesSpawned<AIR_TARGET+5){airSpawnT=7;spawnEdgePlane(true)}}
+  const aAlive=planes.filter(q=>!q.enemy&&!q.dead&&!q.gone).length;
+  if(aAlive<2){allyPlaneT-=dt;if(allyPlaneT<=0){allyPlaneT=20;spawnEdgePlane(false)}}
+  if(airKills>=AIR_TARGET)winMission('LUFTHERRSCHAFT','8 feindliche Flugzeuge abgeschossen')}
+
+function buildWorld(){
+  setupLayout();generateWorld();
+  ({assault:buildAssault,trench:buildTrench,urban:buildUrban,defense:buildDefense,air:buildAir})[CFG.mode]();
+  for(let k=0;k<NCX*NCZ;k++)dirty.add(k);
+  buildMinimapBg()}
 
 /* ---------- Viewmodel ---------- */
 const vm={gun:new THREE.Group(),pick:new THREE.Group(),block:new THREE.Group(),rocket:new THREE.Group(),flash:null};
 function vbox(parent,w,h,d,color,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),new THREE.MeshLambertMaterial({color}));m.position.set(x,y,z);parent.add(m);return m}
-(()=>{const g=vm.gun;
-  vbox(g,.05,.08,.30,0x6b4423,0,-.02,.20);vbox(g,.052,.065,.34,0x7a4f2a,0,0,-.08);vbox(g,.03,.03,.46,0x2c2c2c,0,.012,-.46);
-  vbox(g,.04,.04,.12,0x2c2c2c,0,.04,-.12);vbox(g,.012,.03,.012,0x111111,0,.045,-.66);vbox(g,.04,.05,.04,0x222222,0,-.06,-.06);
-  vbox(g,.07,.07,.20,0x4f5a30,.02,-.075,-.20);       // Unterarm
-  vbox(g,.075,.075,.25,0x4f5a30,.02,-.09,.05);
-  vm.flash=vbox(g,.12,.12,.08,0xffdd66,0,.012,-.74);vm.flash.material=new THREE.MeshBasicMaterial({color:0xffdd66});vm.flash.visible=false;
-  g.position.set(.2,-.2,-.42);vmScene.add(g)})();
+function buildGunModel(kind){const g=vm.gun;while(g.children.length)g.remove(g.children[0]);
+  const arm=()=>{vbox(g,.07,.07,.20,0x4f5a30,.02,-.075,-.20);vbox(g,.075,.075,.25,0x4f5a30,.02,-.09,.05)};let mzz=-.74;
+  if(kind==='rifle'){vbox(g,.05,.08,.30,0x6b4423,0,-.02,.20);vbox(g,.052,.065,.34,0x7a4f2a,0,0,-.08);vbox(g,.03,.03,.46,0x2c2c2c,0,.012,-.46);
+    vbox(g,.04,.04,.12,0x2c2c2c,0,.04,-.12);vbox(g,.012,.03,.012,0x111111,0,.045,-.66);vbox(g,.04,.05,.04,0x222222,0,-.06,-.06);arm()}
+  else if(kind==='smg'){vbox(g,.055,.075,.38,0x2c2c2c,0,0,-.1);vbox(g,.04,.06,.22,0x6b4423,0,-.02,.2);vbox(g,.028,.028,.22,0x1e1e1e,0,.01,-.38);vbox(g,.04,.16,.06,0x242424,0,-.12,-.08);vbox(g,.04,.05,.05,0x1a1a1a,0,.045,-.2);mzz=-.52;arm()}
+  else if(kind==='mg'){vbox(g,.07,.09,.55,0x35382d,0,0,-.12);vbox(g,.05,.08,.3,0x6b4423,0,-.02,.28);vbox(g,.035,.035,.5,0x1e1e1e,0,.01,-.6);vbox(g,.12,.12,.12,0x2d3026,0,-.1,-.08);vbox(g,.012,.14,.012,0x1a1a1a,-.03,-.1,-.7);vbox(g,.012,.14,.012,0x1a1a1a,.03,-.1,-.7);mzz=-.88;arm()}
+  else if(kind==='sniper'){vbox(g,.05,.08,.34,0x6b4423,0,-.02,.22);vbox(g,.05,.065,.36,0x7a4f2a,0,0,-.08);vbox(g,.026,.026,.62,0x222222,0,.012,-.58);vbox(g,.05,.05,.24,0x1a1a1a,0,.075,-.1);vbox(g,.06,.06,.04,0x111111,0,.075,-.23);mzz=-.9;arm()}
+  else{vbox(g,.05,.08,.32,0x6b4423,0,-.02,.22);vbox(g,.05,.06,.3,0x7a4f2a,0,0,-.05);vbox(g,.04,.04,.55,0x2c2c2c,0,.015,-.4);vbox(g,.045,.04,.2,0x6b4423,0,-.03,-.35);mzz=-.7;arm()}
+  vm.flash=vbox(g,.12,.12,.08,0xffdd66,0,.012,mzz);vm.flash.material=new THREE.MeshBasicMaterial({color:0xffdd66});vm.flash.visible=false}
+buildGunModel('rifle');vm.gun.position.set(.2,-.2,-.42);vmScene.add(vm.gun);
+
 (()=>{const g=vm.pick;vbox(g,.035,.55,.035,0x7a5530,0,0,0);vbox(g,.34,.05,.05,0x9aa0a6,0,.27,0);vbox(g,.05,.1,.05,0x9aa0a6,-.17,.23,0);vbox(g,.05,.1,.05,0x9aa0a6,.17,.23,0);
   vbox(g,.08,.08,.08,0x4f5a30,0,-.22,0);g.position.set(.28,-.32,-.5);vmScene.add(g)})();
-(()=>{const g=vm.rocket;vbox(g,.1,.1,1.15,0x4c5433,0,0,-.35);vbox(g,.15,.15,.1,0x25271f,0,0,-.95);vbox(g,.15,.15,.12,0x25271f,0,0,.22);vbox(g,.05,.1,.1,0x222222,0,.1,-.2);vbox(g,.08,.08,.2,0xb5532a,0,0,-1.05);vbox(g,.07,.07,.25,0x4f5a30,-.02,-.12,-.1);g.position.set(.2,-.18,-.5);vmScene.add(g)})();
+function buildSpecialModel(kind){const g=vm.rocket;while(g.children.length)g.remove(g.children[0]);
+  if(kind==='flame'){vbox(g,.08,.08,.9,0x33362b,0,0,-.3);vbox(g,.05,.05,.35,0x1e1e1e,0,0,-.85);vbox(g,.03,.03,.05,0xff7a20,0,0,-1.05);vbox(g,.12,.14,.2,0x555a4a,0,-.1,.15);vbox(g,.07,.07,.25,0x4f5a30,-.02,-.12,-.1)}
+  else{vbox(g,.1,.1,1.15,0x4c5433,0,0,-.35);vbox(g,.15,.15,.1,0x25271f,0,0,-.95);vbox(g,.15,.15,.12,0x25271f,0,0,.22);vbox(g,.05,.1,.1,0x222222,0,.1,-.2);vbox(g,.08,.08,.2,0xb5532a,0,0,-1.05);vbox(g,.07,.07,.25,0x4f5a30,-.02,-.12,-.1)}}
+buildSpecialModel('rocket');vm.rocket.position.set(.2,-.18,-.5);vmScene.add(vm.rocket);
 function updateRocketVM(dt,bxo,byo){const g=vm.rocket;
   g.position.set(lerp(.2,0,ads)+bxo*(1-ads*.8),lerp(-.2,-.14,ads)+byo*(1-ads*.8)-(rocketCd>1?.1*Math.min(1,(rocketCd-1)/1.2):0),lerp(-.5,-.4,ads)+kick*.08);g.rotation.set(kick*.12,0,0)}
+vm.cockpit=new THREE.Group();
+(()=>{const g=vm.cockpit;vbox(g,.5,.3,1.3,0x3d4430,0,-.46,-.9);vbox(g,1.5,.05,.8,0x3d4430,-.9,-.3,-.7);vbox(g,1.5,.05,.8,0x3d4430,.9,-.3,-.7);
+  vbox(g,2.4,.03,.03,0x15160f,0,.5,-1.4);vbox(g,.03,1,.03,0x15160f,-.95,0,-1.4);vbox(g,.03,1,.03,0x15160f,.95,0,-1.4);vm.prop=vbox(g,.9,.02,.02,0x111111,0,-.22,-1.9);g.visible=false;vmScene.add(g)})();
 let blockMesh=null,blockSel=-1;
 function setBlockModel(id){if(blockSel===id)return;blockSel=id;if(blockMesh){vm.block.remove(blockMesh)}
   const T=TILES[id];const m=(t)=>new THREE.MeshLambertMaterial({map:tileTex(t)});
@@ -977,7 +1262,7 @@ let vmFlash=0;
 function updateVM(dt){
   const sp=Math.hypot(P.vx,P.vz);if(P.onGround)bobT+=dt*sp*1.9;
   const mv=sp>.5&&P.onGround?1:0;const bxo=Math.sin(bobT)*.012*mv,byo=Math.abs(Math.cos(bobT))*.012*mv;
-  const sl=inTank?{t:'none'}:slots[sel];vm.gun.visible=sl.t==='rifle';vm.pick.visible=sl.t==='pick';vm.block.visible=sl.t==='block';vm.rocket.visible=sl.t==='rocket';
+  const sl=inTank?{t:'none'}:slots[sel];vm.gun.visible=sl.t==='rifle';vm.pick.visible=sl.t==='pick';vm.block.visible=sl.t==='block';vm.rocket.visible=sl.t==='rocket';vm.cockpit.visible=inTank&&TANK.kind==='plane';if(vm.cockpit.visible&&vm.prop)vm.prop.rotation.z+=dt*60;
   adsTarget=rmb&&(inTank||sl.t==='rifle'||sl.t==='rocket')&&reloading<=0;ads=lerp(ads,adsTarget?1:0,Math.min(1,dt*12));
   kick=Math.max(0,kick-dt*7);
   if(sl.t==='rifle'){const rp=reloading>0?1-reloading/RELOAD:0,rs=Math.sin(rp*Math.PI);
@@ -987,19 +1272,19 @@ function updateVM(dt){
   else if(sl.t==='pick'){const s=swing>0?Math.sin(swing*Math.PI):0;vm.pick.position.set(.28+bxo,-.32+byo,-.5);vm.pick.rotation.set(-.3-s*1.1,.2,.25)}
   else if(sl.t==='rocket'){updateRocketVM(dt,bxo,byo)}else if(sl.t==='block'){setBlockModel(sl.id);const s=swing>0?Math.sin(swing*Math.PI):0;vm.block.position.set(.3+bxo,-.28+byo-s*.05,-.55);vm.block.rotation.set(.25-s*.7,.6,0);if(swing>0&&!lmb){swing+=dt*5;if(swing>=1)swing=0}}
   if(sl.t==='pick'&&swing>0&&!lmb){swing+=dt*5;if(swing>=1)swing=0}
-  camera.fov=lerp(75,40,ads);camera.updateProjectionMatrix();
+  camera.fov=lerp(75,sl.t==='rifle'?W1.zoom:40,ads);camera.updateProjectionMatrix();
   document.getElementById('scope').style.opacity=ads*.8}
 
 /* ---------- HUD ---------- */
 const hud=document.getElementById('hud'),hotbarEl=document.getElementById('hotbar');
 function iconFor(i){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');const s=slots[i];
   if(s.t==='rifle'){g.fillStyle='#6b4423';g.fillRect(1,9,5,3);g.fillRect(5,8,5,2);g.fillStyle='#333';g.fillRect(9,7,6,1);g.fillRect(9,8,2,1);g.fillStyle='#222';g.fillRect(6,10,2,2)}
-  else if(s.t==='rocket'){g.fillStyle='#4c5433';g.fillRect(2,7,12,3);g.fillStyle='#222';g.fillRect(1,6,2,5);g.fillRect(13,6,2,5);g.fillStyle='#b5532a';g.fillRect(0,7,2,3);g.fillStyle='#333';g.fillRect(5,5,3,2)}else if(s.t==='pick'){g.fillStyle='#7a5530';for(let k=0;k<11;k++)g.fillRect(2+k,13-k,1,1);g.fillStyle='#aab';g.fillRect(8,1,6,1);g.fillRect(12,2,2,2);g.fillRect(7,2,1,2);g.fillRect(6,3,1,2);g.fillRect(13,4,1,1)}
-  else{g.drawImage(atlasCanvas,(TILES[s.id][1]&3)*16,(TILES[s.id][1]>>2)*16,16,16,0,0,16,16)}
+  else if(s.t==='rocket'&&CFG.special==='flame'){g.fillStyle='#444';g.fillRect(2,8,9,3);g.fillStyle='#222';g.fillRect(10,8,3,3);g.fillStyle='#ff7a20';g.fillRect(13,7,2,4);g.fillStyle='#ffd24a';g.fillRect(14,8,2,2)}else if(s.t==='rocket'){g.fillStyle='#4c5433';g.fillRect(2,7,12,3);g.fillStyle='#222';g.fillRect(1,6,2,5);g.fillRect(13,6,2,5);g.fillStyle='#b5532a';g.fillRect(0,7,2,3);g.fillStyle='#333';g.fillRect(5,5,3,2)}else if(s.t==='pick'){g.fillStyle='#7a5530';for(let k=0;k<11;k++)g.fillRect(2+k,13-k,1,1);g.fillStyle='#aab';g.fillRect(8,1,6,1);g.fillRect(12,2,2,2);g.fillRect(7,2,1,2);g.fillRect(6,3,1,2);g.fillRect(13,4,1,1)}
+  else{g.drawImage(atlasCanvas,(TILES[s.id][1]&7)*16,(TILES[s.id][1]>>3)*16,16,16,0,0,16,16)}
   return c}
 function buildHotbar(){hotbarEl.innerHTML='';slots.forEach((s,i)=>{const d=document.createElement('div');d.className='slot'+(i===sel?' sel':'')+(s.t==='rocket'&&!hasLauncher?' locked':'');d.dataset.i=i;d.appendChild(iconFor(i));
   const k=document.createElement('span');k.className='k';k.textContent=(i+1)%10;d.appendChild(k);
-  if(s.t==='rocket'&&hasLauncher){const n=document.createElement('span');n.className='n';n.textContent=rockets;d.appendChild(n)}
+  if(s.t==='rocket'&&hasLauncher){const n=document.createElement('span');n.className='n';n.textContent=Math.ceil(rockets);d.appendChild(n)}
   if(s.t==='block'){const n=document.createElement('span');n.className='n';n.textContent=inv[s.id]||0;d.appendChild(n)}
   hotbarEl.appendChild(d)})}
 function toast(msg){const t=document.getElementById('toasts');const d=document.createElement('div');d.textContent=msg;t.appendChild(d);setTimeout(()=>d.remove(),3200);while(t.children.length>4)t.firstChild.remove()}
@@ -1008,17 +1293,22 @@ function updateHUD(dt){
   const h=Math.ceil(hp);if(h!==lastHP){lastHP=h;let s='';for(let i=0;i<10;i++){const v=hp-i*10;s+=`<span class="${v>=7?'':v>=3?'h':'e'}">♥</span>`}document.getElementById('hearts').innerHTML=s}
   const sl=slots[sel];let a=`${reloading>0?'NACHLADEN …':'<b>'+mag+'</b> / '+reserve}<br><small>Handgranaten [G]: ${grenades}</small>`;
   if(sl.t!=='rifle')a=`<small>Munition ${mag} / ${reserve} · Granaten [G]: ${grenades}</small>`;
-  if(inTank)a=`<b>${tankCd>0?'LADEN …':'BEREIT'}</b><br><small>Panzer ${Math.max(0,Math.ceil(TANK.hp))} / 400</small>`;
-  else if(sl.t==='rocket')a=`<b>${rocketCd>.6?'LADEN …':rockets}</b> Raketen<br><small>Granaten [G]: ${grenades}</small>`;
+  if(inTank&&TANK.kind==='plane')a=`<b>${Math.max(0,Math.ceil(TANK.hp))}</b> / 300<br><small>${Math.round(TANK.speed*3.6)} km/h · Höhe ${Math.round(TANK.y)} m</small>`;
+  else if(inTank)a=`<b>${tankCd>0?'LADEN …':'BEREIT'}</b><br><small>Panzer ${Math.max(0,Math.ceil(TANK.hp))} / 400</small>`;
+  else if(sl.t==='rocket')a=CFG.special==='flame'?`<b>${Math.ceil(rockets)}%</b> Treibstoff<br><small>Granaten [G]: ${grenades}</small>`:`<b>${rocketCd>.6?'LADEN …':rockets}</b> Raketen<br><small>Granaten [G]: ${grenades}</small>`;
   if(a!==lastAmmo){lastAmmo=a;document.getElementById('ammo').innerHTML=a}
-  const alive=enemies.filter(e=>!e.dead).length;
-  const obj=missionDone?'<b>MISSION ERFÜLLT</b> – freies Spiel':'<b>AUFTRAG:</b> Hisse die Flagge im feindlichen Gefechtsstand';
-  const st=`Feinde: ${alive} · Abschüsse: ${kills} · Kameraden: ${allies.filter(a=>!a.dead).length} · Zeit ${fmtTime(gameTime)}`;
+  const alive=CFG.mode==='air'?planes.filter(q=>!q.dead&&q.enemy).length:enemies.filter(e=>!e.dead).length;
+  const objT={assault:'Hisse die Flagge im feindlichen Gefechtsstand',trench:'Erobere die Gräben und hisse die Flagge im Kommandobunker',urban:'Erobere das Hauptquartier und hisse die Flagge',defense:`Halte die Stellung – Welle ${Math.max(1,WV.n)} von ${WV.total}`,air:`Schieße ${AIR_TARGET} Flugzeuge ab (${airKills}/${AIR_TARGET})`}[CFG.mode];
+  const obj=missionDone?'<b>MISSION ERFÜLLT</b> – freies Spiel':'<b>AUFTRAG:</b> '+objT;
+  const st=`Feinde: ${alive} · Abschüsse: ${CFG.mode==='air'?airKills:kills} · Kameraden: ${CFG.mode==='air'?planes.filter(q=>!q.enemy&&!q.dead&&!q.gone).length:allies.filter(a=>!a.dead).length} · Zeit ${fmtTime(gameTime)}`;
   if(obj+st!==lastStats){lastStats=obj+st;document.getElementById('obj').innerHTML=obj;document.getElementById('stats').textContent=st}
-  const dx=FLAG.x-P.x,dz=FLAG.z-P.z,dd=Math.hypot(dx,dz);
+  let tgx=FLAG.x,tgz=FLAG.z,hasT=true;
+  if(CFG.mode==='defense'||CFG.mode==='air'){hasT=false;let bd=1e9;const list=CFG.mode==='air'?planes.filter(q=>!q.dead&&q.enemy):enemies.filter(e=>!e.dead);
+    for(const q of list){const d=Math.hypot(q.x-P.x,q.z-P.z);if(d<bd){bd=d;tgx=q.x;tgz=q.z;hasT=true}}}
+  const dx=tgx-P.x,dz=tgz-P.z,dd=Math.hypot(dx,dz)||1;
   const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
   const ang=Math.atan2((dx*rx+dz*rz)/dd,(dx*fx+dz*fz)/dd);
-  document.getElementById('arrow').style.transform=`rotate(${ang}rad)`;document.getElementById('dist').textContent=Math.round(dd)+' m';
+  document.getElementById('arrow').style.transform=`rotate(${ang}rad)`;document.getElementById('arrow').style.opacity=hasT?1:0;document.getElementById('dist').textContent=hasT?Math.round(dd)+' m':'';
   vigT=Math.max(0,vigT-dt*1.2);document.getElementById('vig').style.opacity=vigT+(hp<30?(.3+Math.sin(gameTime*5)*.1):0);
   for(const k of['T','B','L','R']){dmgT[k]=Math.max(0,dmgT[k]-dt*1.5);document.getElementById('dm'+k).style.opacity=dmgT[k]}
   if(hmT>0){hmT-=dt;if(hmT<=0)document.getElementById('hitmark').style.opacity=0}
@@ -1029,7 +1319,7 @@ let flashT=0;
 const menu=document.getElementById('menu'),deadEl=document.getElementById('dead');
 function cycleSlot(d){let n=sel;do{n=(n+d+slots.length)%slots.length}while(slots[n].t==='rocket'&&!hasLauncher);selectSlot(n)}
 function isGun(){return inTank||slots[sel].t==='rifle'||slots[sel].t==='rocket'}
-function primaryDown(){if(inTank)fireTank();else{const t=slots[sel].t;if(t==='rifle')fireRifle();else if(t==='rocket')fireRocket();else swing=Math.max(swing,.01)}}
+function primaryDown(){if(inTank)fireTank();else{const t=slots[sel].t;if(t==='rifle')fireRifle();else if(t==='rocket'){if(CFG.special!=='flame')fireRocket()}else swing=Math.max(swing,.01)}}
 function selectSlot(i){i=(i+slots.length)%slots.length;if(slots[i].t==='rocket'&&!hasLauncher){toast('Raketenwerfer fehlt noch – such die Truhe (siehe Karte)');return}sel=i;if(IS_TOUCH){adsToggle=false;rmb=false;labelButtons()}if(slots[sel].t!=='rifle'&&reloading>0)reloading=0;mineKey=null;mineProg=0;buildHotbar()}
 function labelButtons(){const r=isGun();document.getElementById('bFire').textContent=r?'FEUER':'ABBAU';document.getElementById('bAds').textContent=r?'ZIELEN':'SETZEN'}
 addEventListener('keydown',e=>{keys[e.code]=true;
@@ -1043,15 +1333,16 @@ addEventListener('mouseup',e=>{if(e.button===0)lmb=false;if(e.button===2)rmb=fal
 addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('wheel',e=>{if(!locked||IS_TOUCH)return;cycleSlot(e.deltaY>0?1:-1)},{passive:true});
 addEventListener('mousemove',e=>{if(!locked||IS_TOUCH)return;const s=.0022*(1-ads*.55);yaw-=e.movementX*s;pitch=clamp(pitch-e.movementY*s,-1.55,1.55)});
+function showPauseBtns(){document.getElementById('respawnBtn').classList.remove('hidden');document.getElementById('newBtn').classList.remove('hidden')}
 function setTouchUI(v){document.getElementById('touch').classList.toggle('hidden',!v)}
 function startGame(){initAudio();
   if(IS_TOUCH){locked=true;started=true;menu.classList.add('hidden');hud.classList.remove('hidden');setTouchUI(true);labelButtons();
     try{const r=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(r&&r.catch)r.catch(()=>{})}catch(e){}return}
   canvas.requestPointerLock()}
-function pauseGame(){crouchToggle=false;locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);document.getElementById('respawnBtn').classList.remove('hidden');
+function pauseGame(){crouchToggle=false;locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);showPauseBtns();
   document.getElementById('joybase').classList.add('hidden');menu.classList.remove('hidden');document.getElementById('mtitle').textContent='PAUSE';document.getElementById('play').textContent='WEITER'}
 function setupTouch(){
-  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (Taste E gedrückt halten, wenn du am Mast stehst).<br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>DUCKEN</b> an/aus (schwerer zu treffen, aber langsam) · <b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Gewehr, 2 Spitzhacke, 3 Raketenwerfer, 4–0 Baublöcke)<br><b>E</b> Truhe öffnen (Raketen-Nachschub), Panzer besteigen/verlassen · die Karte oben links zeigt Flagge, Feindlager, Truhen und Panzer<br><br>Fünf Kameraden (blaue Markierung) folgen dir und helfen im Kampf. Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
+  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> <span id="missionText"></span><br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>DUCKEN</b> an/aus (schwerer zu treffen, aber langsam) · <b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Primärwaffe, 2 Spitzhacke, 3 Spezialwaffe, 4–0 Baublöcke)<br><b>E</b> Truhe öffnen (Raketen-Nachschub), Panzer besteigen/verlassen · die Karte oben links zeigt Flagge, Feindlager, Truhen und Panzer<br><br>Kameraden (blaue Markierung) folgen dir und helfen im Kampf. Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
   const jz=document.getElementById('joyzone'),lz=document.getElementById('lookzone'),base=document.getElementById('joybase'),knob=document.getElementById('joyknob');
   let jid=null,jx=0,jy=0,lid=null,lx=0,ly=0,lt0=0,lmv=0;const R=55;const NP={passive:false};
   jz.addEventListener('touchstart',e=>{e.preventDefault();if(jid!==null)return;const t=e.changedTouches[0];jid=t.identifier;jx=t.clientX;jy=t.clientY;
@@ -1084,19 +1375,21 @@ menu.addEventListener('click',startGame);
 function respawn(){
   if(inTank)leaveTank(true);
   crouching=false;crouchToggle=false;P.h=1.8;eyeH=1.62;document.getElementById('bCrouch').style.background='';
-  dead=false;hp=100;lastHP=-1;P.x=12.5;P.z=12.5;P.y=gH(12,12)+1;P.vx=P.vy=P.vz=0;
+  dead=false;hp=100;lastHP=-1;P.x=SPAWN.x;P.z=SPAWN.z;P.y=gH(SPAWN.x,SPAWN.z)+1;P.vx=P.vy=P.vz=0;
   while(collides(P.x,P.y,P.z,P.w,P.h)&&P.y<H-3)P.y+=1;
   reviveAllies();yaw=-Math.PI*.75;pitch=0;mag=MAGSIZE;reserve=Math.max(reserve,40);grenades=Math.max(grenades,3);
   reloading=0;fireCd=0;kick=0;shake=0;vigT=0;lmb=rmb=false;adsToggle=false;
   for(const e of enemies){e.alert=0;e.los=false;e.aim=0}
+  if(CFG.mode==='air')resetPlane();
   for(const k in dmgT)dmgT[k]=0;
   for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;deadEl.classList.add('hidden');menu.classList.add('hidden');toast('Neu gespawnt im Lager');
   if(IS_TOUCH)startGame();else canvas.requestPointerLock()}
 deadEl.addEventListener('click',respawn);
 document.getElementById('respawnBtn').addEventListener('click',e=>{e.stopPropagation();respawn()});
+document.getElementById('newBtn').addEventListener('click',e=>{e.stopPropagation();location.reload()});
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;
   if(locked){started=true;menu.classList.add('hidden');hud.classList.remove('hidden')}
-  else{lmb=rmb=false;for(const k in keys)keys[k]=false;if(!dead){document.getElementById('respawnBtn').classList.remove('hidden');menu.classList.remove('hidden');document.getElementById('mtitle').textContent=started?'PAUSE':'BLOCKFRONT 1944';document.getElementById('play').textContent=started?'WEITER':'SPIELEN'}}});
+  else{lmb=rmb=false;for(const k in keys)keys[k]=false;if(!dead){showPauseBtns();menu.classList.remove('hidden');document.getElementById('mtitle').textContent=started?'PAUSE':'BLOCKFRONT 1944';document.getElementById('play').textContent=started?'WEITER':'SPIELEN'}}});
 
 /* ---------- Hauptschleife ---------- */
 let nextBoom=8+Math.random()*10,last=performance.now(),ready=false;
@@ -1108,10 +1401,10 @@ function simulate(dt){
   fireCd=Math.max(0,fireCd-dt);gCd=Math.max(0,gCd-dt);
   if(reloading>0){reloading-=dt;if(reloading<=0){reloading=0;finishReload()}}
   rocketCd=Math.max(0,rocketCd-dt);tankCd=Math.max(0,tankCd-dt);
-  if(lmb){if(inTank)fireTank();else if(slots[sel].t==='rifle'&&!reloading)fireRifle();else if(slots[sel].t==='rocket')fireRocket()}
+  if(lmb){if(inTank)fireTank();else if(slots[sel].t==='rifle'&&!reloading&&W1.auto)fireRifle();else if(slots[sel].t==='rocket'){if(CFG.special==='flame')fireFlame(dt);else fireRocket()}}
   updateBuild(dt);
   for(let i=0;i<n;i++){for(const e of enemies)if(!e.gone)updateEnemy(e,sub);for(const a of allies)updateAlly(a,sub)}
-  updateGrenades(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);
+  updateGrenades(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);updateWaves(dt);updateAir(dt);
   if(tankSmoke&&Math.random()<dt*7)spawnP(tankSmoke.x+(Math.random()-.5),tankSmoke.y,tankSmoke.z+(Math.random()-.5),(Math.random()-.5)*.4,1.4+Math.random(),(Math.random()-.5)*.4,0x2c2c2c,.5,3.2,-.4,.6);
   if(smoke2&&Math.random()<dt*9)spawnP(smoke2.x+(Math.random()-.5)*1.5,smoke2.y,smoke2.z+(Math.random()-.5)*1.5,(Math.random()-.5)*.4,1.5+Math.random(),(Math.random()-.5)*.4,0x242424,.6,3.5,-.4,.7);
   nextBoom-=dt;if(nextBoom<=0){nextBoom=12+Math.random()*20;sfx('far',.7);shake+=.04;flashT=Math.max(flashT,.12)}
@@ -1127,7 +1420,7 @@ function frame(now){
   // Kamera
   const sx=shake>0?(Math.random()-.5)*shake:0,sy=shake>0?(Math.random()-.5)*shake:0;
   camera.position.set(P.x,P.y+(dead?.35:eyeH),P.z);
-  camera.rotation.set(pitch+sx+kick*.01,yaw+sy,dead?1.2:0);
+  camera.rotation.set(pitch+sx+kick*.01,yaw+sy,dead?1.2:camRoll);
   sky.position.copy(camera.position);
   renderer.clear();renderer.render(scene,camera);
   renderer.clearDepth();if(!dead)renderer.render(vmScene,vmCam);
@@ -1142,13 +1435,50 @@ function finishBoot(){
     look(y,p){yaw=y;pitch=p},allies,TANK,chests,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
     get state(){return{mag,reserve,grenades,hp,dead,missionDone,yaw,pitch,locked,tris:renderer.info.render.triangles,calls:renderer.info.render.calls}},gH,FLAG,mouse(l,r){lmb=l;rmb=r}}}
 const loadEl=document.getElementById('loading');
+function setSky(){const c=document.createElement('canvas');c.width=4;c.height=256;const g=c.getContext('2d');const gr=g.createLinearGradient(0,0,0,256);
+  const hex=n=>'#'+n.toString(16).padStart(6,'0');
+  gr.addColorStop(0,THEME.sky[0]);gr.addColorStop(.35,THEME.sky[1]);gr.addColorStop(.5,hex(THEME.fog));gr.addColorStop(1,hex(THEME.fog));g.fillStyle=gr;g.fillRect(0,0,4,256);
+  const t=new THREE.CanvasTexture(c);if(sky.material.map)sky.material.map.dispose();sky.material.map=t;sky.material.needsUpdate=true}
+function applyConfig(){
+  THEME=THEMES[CFG.theme];SUB=THEME.sub;
+  const side=COUNTRIES[CFG.country].side;
+  CFG.enemy=side==='A'?(CFG.theme==='jungle'?'jp':'de'):({winter:'ussr',desert:'uk'}[CFG.theme]||'usa');
+  PAL.friend=COUNTRIES[CFG.country];PAL.enemy=COUNTRIES[CFG.enemy];
+  W1=PRIMARIES[CFG.primary];MAGSIZE=W1.mag;RELOAD=W1.reload;mag=W1.mag;reserve=W1.res;
+  SPEC=SPECIALS[CFG.special];rockets=SPEC.start;hasLauncher=true;
+  buildGunModel(W1.model);buildSpecialModel(CFG.special);
+  scene.background.setHex(THEME.fog);scene.fog.color.setHex(THEME.fog);
+  if(CFG.mode==='air'){scene.fog.near=70;scene.fog.far=240}else if(IS_TOUCH){scene.fog.near=18;scene.fog.far=70}else{scene.fog.near=26;scene.fog.far=100}
+  setSky()}
+function finishBoot(){
+  buildHotbar();ready=true;
+  document.getElementById('loading').classList.add('hidden');menu.classList.remove('hidden');
+  document.getElementById('mh2').textContent=`${COUNTRIES[CFG.country].name} gegen ${COUNTRIES[CFG.enemy].name} · ${MODES[CFG.mode].name} · ${THEME.name}`;
+  document.getElementById('missionText').innerHTML=MODES[CFG.mode].text+'<br><b>Ausrüstung:</b> '+W1.name+' · '+SPEC.name;
+  window.__bf={P,enemies,items,get hp(){return hp},get kills(){return kills},get locked(){return locked},setLocked(v){locked=v;menu.classList.add('hidden');hud.classList.remove('hidden')},
+    look(y,p){yaw=y;pitch=p},allies,TANK,chests,planes,CFG,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},get airKills(){return airKills},WV,tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
+    get state(){return{mag,reserve,grenades,hp,dead,missionDone,yaw,pitch,locked,tris:renderer.info.render.triangles,calls:renderer.info.render.calls}},gH,FLAG,mouse(l,r){lmb=l;rmb=r}};
+  if(CFG.mode==='air'){resetPlane();labelButtons()}}
 function boot(){
   loadEl.textContent='ERZEUGE WELT …';
   requestAnimationFrame(()=>setTimeout(()=>{
-    buildWorld();const total=dirty.size;
+    applyConfig();buildWorld();const total=dirty.size;
     (function step(){rebuildDirty(2);loadEl.textContent='BAUE SCHLACHTFELD … '+Math.round((1-dirty.size/total)*100)+'%';
       if(dirty.size)requestAnimationFrame(step);else finishBoot()})()},30))}
-boot();
+/* ---------- Einsatz-Auswahl ---------- */
+(function setupScreen(){
+  try{const sv=JSON.parse(localStorage.getItem('blockfront-cfg')||'null');if(sv)for(const k of['country','mode','theme','primary','special'])if(sv[k])CFG[k]=sv[k]}catch(e){}
+  if(!COUNTRIES[CFG.country])CFG.country='usa';if(!MODES[CFG.mode])CFG.mode='assault';if(!THEMES[CFG.theme])CFG.theme='europe';if(!PRIMARIES[CFG.primary])CFG.primary='rifle';if(!SPECIALS[CFG.special])CFG.special='rocket';
+  const groups=[['cLand','country',COUNTRIES,v=>v.side==='A'?'Alliierte Truppen':'Achsenmächte (Gegner sind Alliierte)'],['cMode','mode',MODES,v=>v.desc],['cTheme','theme',THEMES,v=>v.desc],['cPrim','primary',PRIMARIES,v=>v.desc],['cSpec','special',SPECIALS,v=>v.desc]];
+  const info=document.getElementById('setupinfo');
+  const refresh=()=>{for(const g of groups)for(const b of document.getElementById(g[0]).children)b.classList.toggle('on',b.dataset.k===CFG[g[1]])};
+  for(const g of groups){const box=document.getElementById(g[0]);
+    for(const k in g[2]){const b=document.createElement('button');b.className='chip';b.textContent=g[2][k].name;b.dataset.k=k;
+      b.addEventListener('click',()=>{CFG[g[1]]=k;refresh();info.textContent=g[2][k].name+': '+g[3](g[2][k])});box.appendChild(b)}}
+  refresh();info.textContent='Wähle Land, Einsatzart, Schauplatz und Waffen – dann den Einsatz starten.';
+  document.getElementById('startBtn').addEventListener('click',()=>{
+    try{localStorage.setItem('blockfront-cfg',JSON.stringify(CFG))}catch(e){}
+    document.getElementById('setup').classList.add('hidden');loadEl.classList.remove('hidden');boot()})})();
 requestAnimationFrame(frame);
 })();
 </script>
