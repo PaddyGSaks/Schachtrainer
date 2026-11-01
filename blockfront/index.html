@@ -133,7 +133,7 @@ body.touch #toasts{top:12%;font-size:14px}
 <div id="dead" class="overlay hidden">
   <h1>GEFALLEN</h1>
   <h2 id="deadsub"></h2>
-  <button class="btn">NOCHMAL</button>
+  <button class="btn">NEU SPAWNEN</button>
 </div>
 
 <div id="touch" class="hidden">
@@ -859,7 +859,16 @@ function setupTouch(){
 if(IS_TOUCH)setupTouch();
 document.getElementById('play').addEventListener('click',e=>{e.stopPropagation();startGame()});
 menu.addEventListener('click',startGame);
-deadEl.addEventListener('click',()=>location.reload());
+function respawn(){
+  dead=false;hp=100;lastHP=-1;P.x=12.5;P.z=12.5;P.y=gH(12,12)+1;P.vx=P.vy=P.vz=0;
+  while(collides(P.x,P.y,P.z,P.w,P.h)&&P.y<H-3)P.y+=1;
+  yaw=-Math.PI*.75;pitch=0;mag=MAGSIZE;reserve=Math.max(reserve,40);grenades=Math.max(grenades,3);
+  reloading=0;fireCd=0;kick=0;shake=0;vigT=0;lmb=rmb=false;adsToggle=false;
+  for(const e of enemies){e.alert=0;e.los=false;e.aim=0}
+  for(const k in dmgT)dmgT[k]=0;
+  deadEl.classList.add('hidden');toast('Neu gespawnt im Lager');
+  if(IS_TOUCH)startGame();else canvas.requestPointerLock()}
+deadEl.addEventListener('click',respawn);
 document.addEventListener('pointerlockchange',()=>{locked=document.pointerLockElement===canvas;
   if(locked){started=true;menu.classList.add('hidden');hud.classList.remove('hidden')}
   else{lmb=rmb=false;for(const k in keys)keys[k]=false;if(!dead){menu.classList.remove('hidden');document.getElementById('mtitle').textContent=started?'PAUSE':'BLOCKFRONT 1944';document.getElementById('play').textContent=started?'WEITER':'SPIELEN'}}});
