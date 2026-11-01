@@ -72,6 +72,7 @@ body.touch{touch-action:none;overscroll-behavior:none;-webkit-touch-callout:none
 .tb{position:absolute;border-radius:50%;border:3px solid rgba(255,255,255,.7);background:rgba(20,20,20,.45);color:#fff;font:bold 13px "Courier New",monospace;display:flex;align-items:center;justify-content:center;text-align:center;text-shadow:1px 1px 0 #000}
 .tb.on{background:rgba(255,210,74,.65)}
 #bFire{right:16px;bottom:62px;width:84px;height:84px;font-size:15px;background:rgba(190,40,40,.5)}
+#bCrouch{right:22px;bottom:158px;width:58px;height:58px;font-size:11px}
 #bAds{right:112px;bottom:128px;width:58px;height:58px;font-size:12px}
 #bReload{right:108px;bottom:60px;width:48px;height:48px}
 #bGren{right:168px;bottom:96px;width:48px;height:48px}
@@ -123,7 +124,7 @@ body.touch #toasts{top:12%;font-size:14px}
     <b>WASD</b> bewegen · <b>Leertaste</b> springen · <b>Shift</b> sprinten · <b>Maus</b> umsehen<br>
     <b>Linksklick</b> schießen / Blöcke abbauen · <b>Rechtsklick</b> zielen / Block setzen<br>
     <b>R</b> nachladen · <b>G</b> Handgranate (sprengt Löcher in die Welt!) · <b>1–9 / Mausrad</b> Slot wählen<br>
-    <b>1</b> Gewehr · <b>2</b> Spitzhacke · <b>3–9</b> Baublöcke (Sandsäcke, Bretter, Ziegel, Beton …)<br><b>T</b> neu spawnen, falls etwas hängt oder buggt<br><br>
+    <b>1</b> Gewehr · <b>2</b> Spitzhacke · <b>3–9</b> Baublöcke (Sandsäcke, Bretter, Ziegel, Beton …)<br><b>C / Strg</b> ducken (schwerer zu treffen, aber langsam) · <b>T</b> neu spawnen, falls etwas hängt oder buggt<br><br>
     Wie in Minecraft kannst du alles abbauen und Deckung bauen. Feinde hören Schüsse – bleib in Bewegung.
     Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen.
   </div>
@@ -142,6 +143,7 @@ body.touch #toasts{top:12%;font-size:14px}
   <div id="joyzone"></div>
   <div id="joybase" class="hidden"><div id="joyknob"></div></div>
   <div class="tb" id="bFire">FEUER</div>
+  <div class="tb" id="bCrouch">DUCKEN</div>
   <div class="tb" id="bAds">ZIELEN</div>
   <div class="tb" id="bReload">R</div>
   <div class="tb" id="bGren">G</div>
@@ -453,7 +455,7 @@ const P={x:12.5,y:20,z:12.5,vx:0,vy:0,vz:0,w:.3,h:1.8,onGround:false,bx:false,la
 let yaw=-Math.PI*.75,pitch=0,hp=100,dead=false,locked=false,started=false,gameTime=0,kills=0,missionDone=false;
 let mag=8,reserve=40,grenades=3,reloading=0,fireCd=0,gCd=0,ads=0,adsTarget=false,kick=0,shake=0,swing=0,bobT=0,placeCd=0;
 const RELOAD=2.0,MAGSIZE=8;
-const keys={};const joy={x:0,y:0,sprint:false};let adsToggle=false;let lmb=false,rmb=false;
+const keys={};let crouching=false,crouchToggle=false,eyeH=1.62;const joy={x:0,y:0,sprint:false};let adsToggle=false;let lmb=false,rmb=false;
 const inv={3:0,2:12,6:24,7:16,8:48,9:12,10:4};
 const slots=[{t:'rifle'},{t:'pick'},{t:'block',id:8},{t:'block',id:6},{t:'block',id:7},{t:'block',id:9},{t:'block',id:3},{t:'block',id:2},{t:'block',id:10}];
 let sel=0;
@@ -502,8 +504,8 @@ function spawnEnemy(x,z,o={}){
 function turnTo(a,b,k){let d=((b-a+Math.PI)%(Math.PI*2)+Math.PI*2)%(Math.PI*2)-Math.PI;return a+d*Math.min(1,k)}
 function alertEnemies(x,z,r,tx=P.x,tz=P.z){for(const e of enemies)if(!e.dead&&Math.hypot(e.x-x,e.z-z)<r){e.alert=Math.max(e.alert,6);e.lastX=tx;e.lastZ=tz}}
 function enemyShoot(e,dist){
-  const ox=e.x,oy=e.y+1.45,oz=e.z,px=P.x,py=P.y+1.3,pz=P.z;
-  const p=e.sniper?clamp(.92-dist*.004,.4,.85):clamp(.5-dist*.011,.08,.5);const hit=Math.random()<p;
+  const ox=e.x,oy=e.y+1.45,oz=e.z,px=P.x,py=P.y+(crouching?.85:1.3),pz=P.z;
+  const p=(e.sniper?clamp(.92-dist*.004,.4,.85):clamp(.5-dist*.011,.08,.5))*(crouching?.6:1);const hit=Math.random()<p;
   let tx=px,ty=py,tz=pz;if(!hit){tx+=(Math.random()-.5)*3;ty+=(Math.random()-.5)*2;tz+=(Math.random()-.5)*3}
   const fx=Math.sin(e.yaw),fz=Math.cos(e.yaw);
   spawnTracer(ox+fx*.9,oy-.2,oz+fz*.9,tx,ty,tz,0xffc860);e.flash=.07;
@@ -523,7 +525,7 @@ function updateEnemy(e,dt){
     e.vx=e.vz=0;e.vy-=26*dt;moveEnt(e,dt);e.g.position.set(e.x,e.y+(k>=1?.18:0),e.z);
     if(e.deadT>10){scene.remove(e.g);e.gone=true}return}
   if(e.hurtT>0){e.hurtT-=dt;for(const m of e.mats)m.emissive.setHex(e.hurtT>0?0xaa1111:0)}
-  const dx=P.x-e.x,dz=P.z-e.z,dy=(P.y+1.5)-(e.y+1.5),dist=Math.hypot(dx,dz);
+  const dx=P.x-e.x,dz=P.z-e.z,dy=(P.y+eyeH*.92)-(e.y+1.5),dist=Math.hypot(dx,dz);
   e.losT-=dt;
   if(e.losT<=0){e.losT=.2+Math.random()*.1;e.los=false;const range=e.sniper?75:40;
     if(dist<range){const len=Math.hypot(dist,dy)||1;
@@ -593,7 +595,7 @@ function fireRifle(){
   const sp=Math.hypot(P.vx,P.vz);const spread=(ads>.5?.0007:.004)+(sp>1?.012:0)+(P.onGround?0:.02);
   const f=forwardVec();let dx=f[0]+(Math.random()-.5)*spread*2,dy=f[1]+(Math.random()-.5)*spread*2,dz=f[2]+(Math.random()-.5)*spread*2;
   const L=Math.hypot(dx,dy,dz);dx/=L;dy/=L;dz/=L;
-  const ox=P.x,oy=P.y+1.62,oz=P.z;
+  const ox=P.x,oy=P.y+eyeH,oz=P.z;
   const bh=voxelRay(ox,oy,oz,dx,dy,dz,160,0);const tb=bh?bh.t:160;
   let best=tb,be=null,head=false;
   for(const e of enemies){if(e.dead)continue;const t=rayAABB(ox,oy,oz,dx,dy,dz,e.x-.32,e.y,e.z-.32,e.x+.32,e.y+1.85,e.z+.32);
@@ -643,7 +645,7 @@ function playerHitsCell(bx,by,bz){return P.x+P.w>bx&&P.x-P.w<bx+1&&P.z+P.w>bz&&P
 function updateBuild(dt){
   const sl=slots[sel];const mineEl=document.getElementById('mine');
   if(sl.t==='rifle'){outline.visible=false;mineEl.classList.add('hidden');mineKey=null;mineProg=0;return}
-  const f=forwardVec();const hit=voxelRay(P.x,P.y+1.62,P.z,f[0],f[1],f[2],6,1);
+  const f=forwardVec();const hit=voxelRay(P.x,P.y+eyeH,P.z,f[0],f[1],f[2],6,1);
   if(hit){outline.visible=true;outline.position.set(hit.x+.5,hit.y+.5,hit.z+.5)}else outline.visible=false;
   placeCd-=dt;
   if(lmb&&hit&&hit.id!==B.BEDROCK){
@@ -665,12 +667,16 @@ function breakBlock(hit){const id=hit.id;setB(hit.x,hit.y,hit.z,0);debris(hit.x+
 function updatePlayer(dt){
   const f=[-Math.sin(yaw),-Math.cos(yaw)],r=[Math.cos(yaw),-Math.sin(yaw)];
   let mx=(keys.KeyD?1:0)-(keys.KeyA?1:0)+joy.x,mz=(keys.KeyW?1:0)-(keys.KeyS?1:0)+joy.y;const len=Math.hypot(mx,mz);if(len>1){mx/=len;mz/=len}
-  let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint)&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;
+  const wantCrouch=keys.KeyC||keys.ControlLeft||crouchToggle;
+  if(wantCrouch&&!crouching){crouching=true;P.h=1.3}
+  else if(!wantCrouch&&crouching&&!collides(P.x,P.y,P.z,P.w,1.8)){crouching=false;P.h=1.8}
+  eyeH+=((crouching?1.2:1.62)-eyeH)*Math.min(1,dt*14);
+  let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint)&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;if(crouching)speed=Math.min(speed,2.3);
   const inWire=getB(Math.floor(P.x),Math.floor(P.y+.3),Math.floor(P.z))===B.WIRE||getB(Math.floor(P.x),Math.floor(P.y+1),Math.floor(P.z))===B.WIRE;
   if(inWire){speed*=.35;damagePlayer(5*dt,undefined,undefined,true);if(Math.random()<dt*3)toast('Stacheldraht!')}
   const wx=(f[0]*mz+r[0]*mx)*speed,wz=(f[1]*mz+r[1]*mx)*speed;
   const k=Math.min(1,dt*(P.onGround?12:3));P.vx+=(wx-P.vx)*k;P.vz+=(wz-P.vz)*k;
-  if(keys.Space&&P.onGround){P.vy=8.6;P.onGround=false}
+  if(keys.Space&&P.onGround){P.vy=crouching?6.8:8.6;P.onGround=false}
   P.vy-=26*dt;if(P.vy<-40)P.vy=-40;
   const was=P.onGround;P.landV=0;moveEnt(P,dt);
   if(P.onGround&&!was&&P.landV<-15){damagePlayer((-P.landV-15)*3.2);toast('Aua!')}
@@ -830,10 +836,10 @@ function startGame(){initAudio();
   if(IS_TOUCH){locked=true;started=true;menu.classList.add('hidden');hud.classList.remove('hidden');setTouchUI(true);labelButtons();
     try{const r=document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen();if(r&&r.catch)r.catch(()=>{})}catch(e){}return}
   canvas.requestPointerLock()}
-function pauseGame(){locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);document.getElementById('respawnBtn').classList.remove('hidden');
+function pauseGame(){crouchToggle=false;locked=false;lmb=rmb=false;adsToggle=false;for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;setTouchUI(false);document.getElementById('respawnBtn').classList.remove('hidden');
   document.getElementById('joybase').classList.add('hidden');menu.classList.remove('hidden');document.getElementById('mtitle').textContent='PAUSE';document.getElementById('play').textContent='WEITER'}
 function setupTouch(){
-  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (Taste E gedrückt halten, wenn du am Mast stehst).<br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Gewehr, 2 Spitzhacke, 3–9 Baublöcke)<br><br>Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
+  document.getElementById('menu').querySelector('.box').innerHTML='<b>AUFTRAG:</b> Kämpfe dich durch Dorf und Schützengräben zum feindlichen Gefechtsstand und <b>hisse dort die Flagge</b> (Taste E gedrückt halten, wenn du am Mast stehst).<br><br><b>Linker Daumen:</b> bewegen (ganz nach oben ziehen = sprinten)<br><b>Rechter Daumen:</b> wischen = umsehen, kurz antippen = springen<br><b>FEUER</b> schießen oder Blöcke abbauen · <b>ZIELEN</b> zoomen bzw. Block setzen<br><b>DUCKEN</b> an/aus (schwerer zu treffen, aber langsam) · <b>R</b> nachladen · <b>G</b> Handgranate · unten: Slots antippen (1 Gewehr, 2 Spitzhacke, 3–9 Baublöcke)<br><br>Besiegte Gegner lassen Munition, Verbandskästen und Granaten fallen. Granaten sprengen Löcher in die Welt.';
   const jz=document.getElementById('joyzone'),lz=document.getElementById('lookzone'),base=document.getElementById('joybase'),knob=document.getElementById('joyknob');
   let jid=null,jx=0,jy=0,lid=null,lx=0,ly=0,lt0=0,lmv=0;const R=55;const NP={passive:false};
   jz.addEventListener('touchstart',e=>{e.preventDefault();if(jid!==null)return;const t=e.changedTouches[0];jid=t.identifier;jx=t.clientX;jy=t.clientY;
@@ -851,7 +857,7 @@ function setupTouch(){
     const end=e=>{e.preventDefault();el.classList.remove('on');if(up)up()};el.addEventListener('touchend',end);el.addEventListener('touchcancel',end)}
   bind('bFire',()=>{lmb=true;if(slots[sel].t==='rifle')fireRifle();else swing=Math.max(swing,.01)},()=>{lmb=false});
     bind('bAds',()=>{if(slots[sel].t==='rifle'){adsToggle=!adsToggle;rmb=adsToggle}else rmb=true},()=>{if(slots[sel].t!=='rifle')rmb=false});
-  bind('bReload',()=>startReload());bind('bGren',()=>throwGrenade());
+  bind('bCrouch',()=>{crouchToggle=!crouchToggle;document.getElementById('bCrouch').style.background=crouchToggle?'rgba(255,210,74,.55)':''});bind('bReload',()=>startReload());bind('bGren',()=>throwGrenade());
   bind('bUse',()=>{keys.KeyE=true},()=>{keys.KeyE=false});bind('bPause',()=>pauseGame());
   let rt=null;const rb=document.getElementById('bRespawn');
   rb.addEventListener('touchstart',e=>{e.preventDefault();e.stopPropagation();rb.classList.add('on');rt=setTimeout(()=>{rt=null;rb.classList.remove('on');respawn()},800)},NP);
@@ -864,6 +870,7 @@ if(IS_TOUCH)setupTouch();
 document.getElementById('play').addEventListener('click',e=>{e.stopPropagation();startGame()});
 menu.addEventListener('click',startGame);
 function respawn(){
+  crouching=false;crouchToggle=false;P.h=1.8;eyeH=1.62;document.getElementById('bCrouch').style.background='';
   dead=false;hp=100;lastHP=-1;P.x=12.5;P.z=12.5;P.y=gH(12,12)+1;P.vx=P.vy=P.vz=0;
   while(collides(P.x,P.y,P.z,P.w,P.h)&&P.y<H-3)P.y+=1;
   yaw=-Math.PI*.75;pitch=0;mag=MAGSIZE;reserve=Math.max(reserve,40);grenades=Math.max(grenades,3);
@@ -904,7 +911,7 @@ function frame(now){
   if(locked||!started)updateVM(dt);
   // Kamera
   const sx=shake>0?(Math.random()-.5)*shake:0,sy=shake>0?(Math.random()-.5)*shake:0;
-  camera.position.set(P.x,P.y+(dead?.35:1.62),P.z);
+  camera.position.set(P.x,P.y+(dead?.35:eyeH),P.z);
   camera.rotation.set(pitch+sx+kick*.01,yaw+sy,dead?1.2:0);
   sky.position.copy(camera.position);
   renderer.clear();renderer.render(scene,camera);
