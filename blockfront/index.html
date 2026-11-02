@@ -121,6 +121,7 @@ body.touch #toasts{top:12%;font-size:14px}
 <body>
 <canvas id="c"></canvas>
 
+<div id="uw" style="position:fixed;inset:0;background:rgba(25,80,130,.45);opacity:0;pointer-events:none;z-index:1"></div>
 <div id="hud" class="hidden">
   <div id="scope"></div>
   <div id="vig"></div>
@@ -357,7 +358,8 @@ const BASEOPTS={
   defense:[['bunker','Gefechtsbunker','Start im Bunker, volle Deckung'],['gun','Flak-Stellung','Start neben dem Flak-Geschütz'],['tank','Panzerdepot','Start neben dem Panzer, weniger Kameraden']],
   flak:[['g0','Geschütz Ost','Start am östlichen Geschütz'],['g1','Geschütz Süd','Start am südlichen Geschütz'],['g2','Geschütz West','Start am westlichen Geschütz'],['g3','Geschütz Nord','Start am nördlichen Geschütz']],
   air:[['home','Heimatflugplatz','Start über dem Platz in Mittelhöhe'],['high','Hochflug','Start in großer Höhe, guter Überblick'],['west','Küstenstützpunkt','Start am Westrand, Flug Richtung Feind']]};
-const baseOptsFor=(m,bt)=>{const o=m==='defense'?BASEOPTS.defense:m==='flak'?BASEOPTS.flak:m==='air'?BASEOPTS.air:BASEOPTS.ground;return bt==='berlin'&&(m==='urban'||m==='defense')?[['reichstag','Im Reichstag','Start direkt in der Parlamentshalle mit den vielen Fahnen']].concat(o):o};
+const baseOptsFor=(m,bt)=>{const o=m==='defense'?BASEOPTS.defense:m==='flak'?BASEOPTS.flak:m==='air'?BASEOPTS.air:BASEOPTS.ground;if(bt==='dday'&&m==='assault')return [['ship','Landungsboot (Higgins-Boot)','Start im Boot vor dem Strand: nach 5 Sekunden fällt die Rampe, dann raus ins flache Wasser und über den Strand unter MG-Feuer']].concat(o);
+  return bt==='berlin'&&(m==='urban'||m==='defense')?[['reichstag','Im Reichstag','Start direkt in der Parlamentshalle mit den vielen Fahnen']].concat(o):o};
 const ANTHEMS={
   usa:{name:'The Star-Spangled Banner',notes:[['G4',.75],['E4',.25],['C4',1],['E4',1],['G4',1],['C5',2],['E5',.75],['D5',.25],['C5',1],['E4',1],['F#4',1],['G4',2],['G4',.75],['G4',.25],['E5',1],['D5',1],['C5',1],['B4',1],['A4',1],['B4',1],['C5',3]]},
   uk:{name:'God Save the King',notes:[['C4',1],['C4',1],['D4',1],['B3',1.5],['C4',.5],['D4',1],['E4',1],['E4',1],['F4',1],['E4',1.5],['D4',.5],['C4',1],['D4',1],['C4',1],['B3',1],['C4',3]]},
@@ -549,7 +551,7 @@ function setupLayout(){
     urban:{s:[14,14],v:[-200,-200],b:[48,48],t:[19.5,34.5]},defense:{s:[-200,-200],v:[-200,-200],b:[48,48],t:[62,36]},
     flak:{s:[-200,-200],v:[-200,-200],b:[48,48],t:[62,36]},
     air:{s:[-200,-200],v:[-200,-200],b:[-200,-200],t:[-200,-200]}}[CFG.mode];
-  Object.assign(START,{x:L.s[0],z:L.s[1]});Object.assign(VILL,{x:L.v[0],z:L.v[1]});Object.assign(BASE,{x:L.b[0],z:L.b[1]});Object.assign(TANKZ,{x:L.t[0],z:L.t[1]});
+  Object.assign(START,{x:L.s[0],z:L.s[1]});if(VARIANT==='beach'&&CFG.mode==='assault')Object.assign(START,{x:26,z:26});WATER_ON=VARIANT==='beach';SHIP.on=false;SHIP.open=false;SHIP.said=false;SPAWN_Y=null;Object.assign(VILL,{x:L.v[0],z:L.v[1]});Object.assign(BASE,{x:L.b[0],z:L.b[1]});Object.assign(TANKZ,{x:L.t[0],z:L.t[1]});
   if(CFG.mode==='defense'){SPAWN.x=BASE.x-7.5;SPAWN.z=BASE.z+.5}else if(CFG.mode==='flak'){SPAWN.x=BASE.x+11;SPAWN.z=BASE.z+3}else if(CFG.mode==='air'){SPAWN.x=48;SPAWN.z=48}else{SPAWN.x=START.x-1.5;SPAWN.z=START.z-1.5}
   applyBaseSpawn()}
 function applyBaseSpawn(){
@@ -560,11 +562,13 @@ function applyBaseSpawn(){
   else if(M==='defense'){if(b==='bunker'){SPAWN.x=C.x-3;SPAWN.z=C.z+2}else if(b==='gun'){SPAWN.x=C.x+11;SPAWN.z=C.z+3}else if(b==='tank'){SPAWN.x=Math.floor(TANKZ.x)+.5;SPAWN.z=Math.floor(TANKZ.z)+5.5}}
   else if(M==='flak'){const gp=[[14,3],[3,14],[-12,6],[-3,-13]];FLAKIDX=Math.max(0,['g0','g1','g2','g3'].indexOf(b));SPAWN.x=C.x+gp[FLAKIDX][0];SPAWN.z=C.z+gp[FLAKIDX][1]+4}
   else if(M==='air'){if(b==='west'){SPAWN.x=14;SPAWN.z=48}}
+  if(b==='ship'&&VARIANT==='beach'&&M==='assault'){SPAWN.x=7.5;SPAWN.z=12.5;SPAWN_Y=SEA_Y+1}
   if(b==='reichstag'&&(M==='urban'||M==='defense')){SPAWN.x=C.x-7.5;SPAWN.z=C.z+.5}
   if(CFG.role==='tank'&&M!=='air'&&M!=='flak'&&b!=='reichstag'){TANKZ.x=SPAWN.x;TANKZ.z=SPAWN.z}}
 function generateWorld(){
   const M=CFG.mode;
-  const hf=new Float32Array(W*D);const base=(x,z)=>VARIANT==='beach'?7+((x+z)/(W+D-2))*20+fbm(x,z)*3:M==='urban'?12:M==='air'?6+fbm(x,z)*7:10+fbm(x,z)*11;
+  const hf=new Float32Array(W*D);const beachH=(x,z)=>{const d=x+z;return d<30?3+d*.1667:8+(d-30)*.1228};
+  const base=(x,z)=>VARIANT==='beach'?beachH(x,z)+fbm(x,z)*1.5:M==='urban'?12:M==='air'?6+fbm(x,z)*7:10+fbm(x,z)*11;
   for(let z=0;z<D;z++)for(let x=0;x<W;x++)hf[HI(x,z)]=base(x,z);
   const flatten=(c,r,bl,add=0)=>{const tg=Math.round(base(c.x,c.z))+add;
     for(let z=0;z<D;z++)for(let x=0;x<W;x++){const d=Math.hypot(x-c.x,z-c.z);if(d<r+bl){let t=d<r?1:1-(d-r)/bl;t=t*t*(3-2*t);hf[HI(x,z)]=lerp(hf[HI(x,z)],tg,t)}}};
@@ -580,7 +584,7 @@ function generateWorld(){
       if(x<0||z<0||x>=W||z>=D)continue;const d=Math.hypot(x-cx,z-cz);
       if(d<r){hi[HI(x,z)]-=Math.round(dep*(1-(d/r)*(d/r)));craterMask[HI(x,z)]=1}
       else if(d<r+1.2&&rnd()<.5)hi[HI(x,z)]+=1}}
-  if(M!=='air')for(let z=0;z<D;z++)for(let x=0;x<W;x++){const e=Math.min(x,z,W-1-x,D-1-z);if(e<5)hi[HI(x,z)]+=(5-e)*3}
+  if(M!=='air')for(let z=0;z<D;z++)for(let x=0;x<W;x++){const e=Math.min(x,z,W-1-x,D-1-z);if(e<5&&!(VARIANT==='beach'&&x+z<48))hi[HI(x,z)]+=(5-e)*3}
   for(let z=0;z<D;z++)for(let x=0;x<W;x++){
     const h=clamp(hi[HI(x,z)],3,H-14);const s=vnoise(x*.08+100,z*.08);
     let top=THEME.top(s,h);if(craterMask[HI(x,z)])top=B.DIRT;
@@ -629,8 +633,9 @@ function wreckedTank(cx,cz){
   for(let i=0;i<9;i++){setB(x0+(rnd()*7|0),g+1+(rnd()*3|0),z0+(rnd()*4|0),0)}
   return g}
 function buildCamp(){
-  sandWall(8,19,20,19,2,6);sandWall(20,8,20,19,2,6);
-  sandWall(7,7,7,12,1);sandWall(7,7,12,7,1);
+  const sx=START.x,sz=START.z;
+  sandWall(sx-6,sz+5,sx+6,sz+5,2,6);sandWall(sx+6,sz-6,sx+6,sz+5,2,6);
+  sandWall(sx-7,sz-7,sx-7,sz-2,1);sandWall(sx-7,sz-7,sx-2,sz-7,1);
 }
 function buildBase(C,opts={}){
   const g=heights[HI(C.x,C.z)],x0=C.x-5,x1=C.x+5,z0=C.z-5,z1=C.z+5;
@@ -1040,21 +1045,22 @@ function updatePlayer(dt){
   if(wantCrouch&&!crouching){crouching=true;P.h=1.3}
   else if(!wantCrouch&&crouching&&!collides(P.x,P.y,P.z,P.w,1.8)){crouching=false;P.h=1.8}
   eyeH+=((crouching?1.2:1.62)-eyeH)*Math.min(1,dt*14);
-  let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint||(sprintLock&&mz>0))&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;if(crouching)speed=Math.min(speed,2.3);speed*=SPD;
+  let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint||(sprintLock&&mz>0))&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;if(crouching)speed=Math.min(speed,2.3);speed*=SPD;const wd=WATER_ON?clamp(SEA_Y-P.y,0,3):0;if(wd>0)speed=Math.min(speed,4.3*(wd>1.2?.45:.65));
   const inWire=getB(Math.floor(P.x),Math.floor(P.y+.3),Math.floor(P.z))===B.WIRE||getB(Math.floor(P.x),Math.floor(P.y+1),Math.floor(P.z))===B.WIRE;
   wireT-=dt;if(inWire){speed*=.35;if(wireT<=0){wireT=.35;damagePlayer(4);if(Math.random()<.5)toast('Stacheldraht!')}}
   const wx=(f[0]*mz+r[0]*mx)*speed,wz=(f[1]*mz+r[1]*mx)*speed;
   const k=Math.min(1,dt*(P.onGround?12:3));P.vx+=(wx-P.vx)*k;P.vz+=(wz-P.vz)*k;
   if(keys.Space&&P.onGround){P.vy=crouching?6.8:8.6;P.onGround=false}
-  P.vy-=26*dt;if(P.vy<-40)P.vy=-40;
+  if(wd>0){const f=clamp(wd/1.6,0,1);P.vy-=26*(1-f*.9)*dt;P.vy*=1-.6*dt*f;if(keys.Space&&wd>1)P.vy=Math.max(P.vy,3.2)}else P.vy-=26*dt;
+  if(P.vy<-40)P.vy=-40;
   const was=P.onGround;P.landV=0;moveEnt(P,dt);
   if(P.onGround&&!was&&P.landV<-15){damagePlayer((-P.landV-15)*3.2);toast('Aua!')}
   if(P.y<-5){P.y=gH(P.x,P.z)+3;P.vy=0}}
 
 /* ---------- Kameraden ---------- */
 const allies=[];
-function spawnAlly(x,z,i){
-  const s=makeSoldier(false,true);const y=gH(x,z)+1;
+function spawnAlly(x,z,i,yy){
+  const s=makeSoldier(false,true);const y=yy!==undefined?yy:gH(x,z)+1;
   const a={id:i,slot:i,x,y,z,vx:0,vy:0,vz:0,w:.3,h:1.8,hp:100,yaw:-Math.PI*.75,phase:0,fireCd:1+Math.random(),losT:Math.random()*.3,tgt:null,tgtD:0,dead:false,deadT:0,flash:0,hurtT:0,onGround:false,bx:false,landV:0,sT:0,sx:x,sz:z,...s};
   s.g.position.set(x,y,z);scene.add(s.g);allies.push(a);return a}
 function damageAlly(a,d){if(a.dead)return;a.hp-=d;a.hurtT=.12;if(a.hp<=0){a.dead=true;a.deadT=0;toast('Kamerad gefallen!')}}
@@ -1317,9 +1323,10 @@ function scatterCover(nWalls,nWire){
     const horiz=rnd()<.5,L=6+(rnd()*5|0);for(let t=0;t<L;t++){const xx=horiz?x+t:x,zz=horiz?z:z+t;if(xx<W-1&&zz<D-1&&getB(xx,heights[HI(xx,zz)]+1,zz)===0)setB(xx,heights[HI(xx,zz)]+1,zz,B.WIRE)}}}
 const spawnE=(x,z,o)=>spawnEnemy(x,z,o);
 const spawnI=(t,x,z,y)=>spawnItem(t,x,y!==undefined?y:gH(x,z)+1,z);
-function spawnSquad(n){P.x=SPAWN.x;P.z=SPAWN.z;P.y=gH(SPAWN.x,SPAWN.z)+1;
-  for(let i=0;i<n;i++)spawnAlly(SPAWN.x+2+Math.cos(i*1.26)*2.5,SPAWN.z+2+Math.sin(i*1.26)*2.5,i)}
-function campItems(){const S=SPAWN;spawnI('ammo',S.x+4,S.z+1);spawnI('ammo',S.x+1,S.z+4);spawnI('med',S.x+5,S.z+4);spawnI('gren',S.x+3,S.z+5)}
+function spawnSquad(n){P.x=SPAWN.x;P.z=SPAWN.z;P.y=SPAWN_Y!==null?SPAWN_Y:gH(SPAWN.x,SPAWN.z)+1;
+  for(let i=0;i<n;i++){if(SPAWN_Y!==null)spawnAlly(SPAWN.x+2+Math.floor(i/2)*2,SPAWN.z+(i%2?1:-1),i,SPAWN_Y);else spawnAlly(SPAWN.x+2+Math.cos(i*1.26)*2.5,SPAWN.z+2+Math.sin(i*1.26)*2.5,i)}}
+function campItems(){const S=SPAWN;if(SPAWN_Y!==null){spawnI('ammo',10.5,11.5,SPAWN_Y);spawnI('ammo',12.5,13.5,SPAWN_Y);spawnI('med',14.5,12.5,SPAWN_Y);spawnI('gren',8.5,13.5,SPAWN_Y);return}
+  spawnI('ammo',S.x+4,S.z+1);spawnI('ammo',S.x+1,S.z+4);spawnI('med',S.x+5,S.z+4);spawnI('gren',S.x+3,S.z+5)}
 function baseSquad(C,gB){
   [[-5.5,-7.5],[-8.5,.5],[-5.5,8.5],[.5,-8.5]].forEach(q=>spawnE(C.x+q[0],C.z+q[1],{pr:2}));
   [[-1.5,.5],[1.5,-1.5],[.5,3.5],[4.5,4.5]].forEach((q,i)=>spawnE(C.x+q[0],C.z+q[1],{pr:i===3?1.5:2}));
@@ -1330,13 +1337,34 @@ function baseSquad(C,gB){
 function pillbox(x,z){
   const g=heights[HI(x,z)];fillBox(x-2,g+1,z-2,x+2,g+3,z+2,B.CONCRETE);fillBox(x-1,g+1,z-1,x+1,g+2,z+1,0);
   fillBox(x-2,g+2,z-1,x-2,g+2,z+1,0);fillBox(x-1,g+2,z-2,x+1,g+2,z-2,0);fillBox(x+2,g+1,z,x+2,g+2,z,0);spawnE(x+.5,z+.5,{pr:.3})}
+function hedgehog(x,z){const g=heights[HI(x,z)];setB(x,g+1,z,B.METAL);setB(x,g+2,z,B.METAL);setB(x+1,g+1,z,B.METAL);setB(x,g+1,z+1,B.METAL)}
 function beachDefenses(){
-  for(let x=10;x<=44;x+=3){const z=52-x;if(z<6||z>80)continue;const g=heights[HI(x,z)];
-    setB(x,g+1,z,B.METAL);setB(x,g+2,z,B.METAL);setB(x+1,g+1,z,B.METAL);setB(x,g+1,z+1,B.METAL)}
-  for(let x=14;x<=48;x+=3){const z=62-x;if(z<6)continue;const g=heights[HI(x,z)];
-    setB(x,g+1,z,B.METAL);setB(x,g+2,z,B.METAL);setB(x+1,g+1,z,B.METAL);setB(x,g+1,z+1,B.METAL)}
-  for(let x=6;x<=40;x++){const z=46-x;if(z<4||(x%7)>4)continue;const g=heights[HI(x,z)];setB(x,g+1,z,B.WIRE);setB(x,g+2,z,B.WIRE)}
-  for(const q of [[22,56],[30,64],[38,72],[46,76],[56,60],[64,50],[50,86]])pillbox(q[0],q[1])}
+  for(let x=14;x<=62;x+=3){const z=64-x;if(z<6||inZone(x,z,0))continue;hedgehog(x,z)}
+  for(let x=24;x<=70;x+=3){const z=78-x;if(z<6||inZone(x,z,0))continue;hedgehog(x,z)}
+  for(let x=6;x<=44;x++){const z=40-x;if(z<4||(x%7)>4)continue;const g=heights[HI(x,z)];if(g<9)continue;setB(x,g+1,z,B.WIRE);setB(x,g+2,z,B.WIRE)}
+  for(const q of [[42,18],[18,42],[52,26],[26,52],[22,66],[38,74],[46,78],[60,60],[64,50],[50,86]])if(!inZone(q[0],q[1],-2))pillbox(q[0],q[1])}
+function makeSea(){
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(W+160,D+160),new THREE.MeshBasicMaterial({color:0x2d6a9a,transparent:true,opacity:.72,depthWrite:false}));
+  m.rotation.x=-Math.PI/2;m.position.set(W/2,SEA_Y,D/2);m.renderOrder=1;scene.add(m);
+  const ship=(x,z,len,ry)=>{const g=new THREE.Group(),M=c=>new THREE.MeshLambertMaterial({color:c});
+    const add=(w,h,d,c,px,py,pz)=>{const q=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));q.position.set(px,py,pz);g.add(q)};
+    add(7,5,len,0x6a7078,0,1.5,0);add(5,4,len*.3,0x7a8088,0,5.5,-len*.1);add(2,3,3,0x5a6066,0,9,-len*.1);add(.4,6,.4,0x444a50,0,10,len*.05);
+    for(let i=0;i<3;i++)add(.8,.8,5,0x3a3f44,0,3.6,len*.28-i*len*.17);
+    g.position.set(x,SEA_Y+1,z);g.rotation.y=ry;scene.add(g)};
+  ship(-18,8,34,0);ship(10,-20,30,Math.PI/2);ship(-26,40,26,.2)}
+function buildLandingCraft(){
+  const dy=SEA_Y;SHIP.on=true;
+  fillBox(4,dy,10,18,dy,14,B.PLANKS);fillBox(4,dy-2,10,17,dy-1,14,B.METAL);
+  fillBox(4,dy+1,10,18,dy+2,10,B.METAL);fillBox(4,dy+1,14,18,dy+2,14,B.METAL);
+  fillBox(4,dy+1,11,4,dy+3,13,B.METAL);fillBox(18,dy+1,11,18,dy+3,13,B.METAL);
+  fillBox(5,dy+1,11,6,dy+3,13,B.METAL);fillBox(5,dy+1,12,6,dy+3,12,0);
+  const piv=new THREE.Group();piv.position.set(18.5,dy+1.1,12.5);const rm=new THREE.Mesh(new THREE.BoxGeometry(2.6,.2,3.1),new THREE.MeshLambertMaterial({color:0x5c6654}));rm.position.set(1.3,0,0);piv.add(rm);piv.rotation.z=Math.PI/2-.2;scene.add(piv);SHIP.ramp=piv;
+  SPAWN_Y=dy+1}
+function updateShip(dt){
+  if(!SHIP.on)return;
+  if(!SHIP.said&&gameTime>.5){SHIP.said=true;toast('Landungsboot: Die Rampe fällt gleich – bereit machen!')}
+  if(!SHIP.open&&gameTime>5){SHIP.open=true;fillBox(18,SEA_Y+1,11,18,SEA_Y+3,13,0);toast('RAMPE UNTEN – RAUS AUS DEM BOOT!');noiseB(.7,600,80,.9,'lowpass');sfx('boom',.35)}
+  if(SHIP.ramp){if(SHIP.open)SHIP.rt=Math.min(1,SHIP.rt+dt/1.3);SHIP.ramp.rotation.z=lerp(Math.PI/2-.2,-.25,SHIP.rt)}}
 function buildAssault(){
   carveTrench(50,52,66,53);carveTrench(60,56,61,66);carveTrench(22,40,34,41);
   buildCamp();const gB=buildBase(BASE);
@@ -1350,7 +1378,7 @@ function buildAssault(){
   spawnE(52.5,52.5,{pr:.8});spawnE(58.5,53.5,{pr:.8});spawnE(64.5,52.5,{pr:.8});spawnE(60.5,60.5,{pr:.6});
   spawnE(25.5,40.5,{pr:.8});spawnE(31.5,41.5,{pr:.8});spawnE(70.5,44.5,{pr:2});spawnE(81.5,49.5,{pr:2});
   baseSquad(BASE,gB);campItems();placeGun(BASE.x+8,BASE.z+8,Math.PI);
-  if(VARIANT==='beach')beachDefenses();
+  if(VARIANT==='beach'){beachDefenses();if(CFG.base==='ship')buildLandingCraft()}
   spawnI('ammo',38.5,38.5);spawnI('med',49.5,39.5);spawnI('ammo',39.5,50.5);spawnI('gren',50.5,50.5);spawnI('med',44.5,44.5);
   spawnI('ammo',28.5,40.5);spawnI('ammo',29.5,63.5);spawnI('gren',56.5,53.5);spawnI('med',64.5,59.5)}
 
@@ -1383,6 +1411,7 @@ function cityHouse(x0,z0,w,d,floors,door){
   for(let i=0;i<10;i++){const x=x0-2+(rnd()*(w+4)|0),z=z0-2+(rnd()*(d+4)|0);if(x<0||z<0||x>=W||z>=D)continue;const gy=heights[HI(x,z)]+1;
     if(getB(x,gy,z)===0&&getB(x,gy-1,z)!==B.ASPHALT)setB(x,gy,z,rnd()<.7?THEME.wall:B.STONE)}}
 let FLAGPOS=null;
+const SEA_Y=9;let WATER_ON=false,SPAWN_Y=null;const SHIP={on:false,open:false,ramp:null,rt:0,said:false};
 function addBanners(C,g,x0,x1,z0,z1){
   const geo=new THREE.PlaneGeometry(1.5,2.8),mat=new THREE.MeshBasicMaterial({map:flagTexture('de'),side:THREE.DoubleSide});
   const put=(x,z,ry)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,g+5.9,z);m.rotation.y=ry;scene.add(m)};
@@ -1647,6 +1676,7 @@ function buildFlak(){
 function buildWorld(){
   setupLayout();generateWorld();
   if(CFG.mode==='assault'&&CFG.base==='front')levelArea(SPAWN.x,SPAWN.z,2);
+  if(VARIANT==='beach')makeSea();
   ({assault:buildAssault,trench:buildTrench,urban:buildUrban,defense:buildDefense,air:buildAir,flak:buildFlak})[CFG.mode]();
   if(CFG.mode==='assault'||CFG.mode==='trench'||CFG.mode==='urban')spawnExtras();
   for(let k=0;k<NCX*NCZ;k++)dirty.add(k);
@@ -1822,7 +1852,8 @@ menu.addEventListener('click',startGame);
 function respawn(){
   if(inTank){if(curGun)dismountGun(true);else leaveTank(true)}
   crouching=false;crouchToggle=false;P.h=1.8;eyeH=1.62;document.getElementById('bCrouch').style.background='';
-  dead=false;hp=100;lastHP=-1;P.x=SPAWN.x;P.z=SPAWN.z;P.y=gH(SPAWN.x,SPAWN.z)+1;P.vx=P.vy=P.vz=0;
+  if(SHIP.on&&SHIP.open){SPAWN.x=START.x-1.5;SPAWN.z=START.z-1.5;SPAWN_Y=null}
+  dead=false;hp=100;lastHP=-1;P.x=SPAWN.x;P.z=SPAWN.z;P.y=SPAWN_Y!==null?SPAWN_Y:gH(SPAWN.x,SPAWN.z)+1;P.vx=P.vy=P.vz=0;
   while(collides(P.x,P.y,P.z,P.w,P.h)&&P.y<H-3)P.y+=1;
   reviveAllies();yaw=-Math.PI*.75;pitch=0;mag=MAGSIZE;reserve=Math.max(reserve,40);grenades=Math.max(grenades,3);
   reloading=0;fireCd=0;kick=0;shake=0;vigT=0;lmb=rmb=false;adsToggle=false;
@@ -1852,7 +1883,7 @@ function simulate(dt){
   if(lmb){if(inTank)fireTank();else if(slots[sel].t==='rifle'&&!reloading&&W1.auto)fireRifle();else if(slots[sel].t==='rocket'){if(SPEC.kind==='flame')fireFlame(dt);else if(SPEC.kind!=='smoke')fireRocket()}}
   updateBuild(dt);
   for(let i=0;i<n;i++){for(const e of enemies)if(!e.gone)updateEnemy(e,sub);for(const a of allies)updateAlly(a,sub)}
-  updateGrenades(dt);updateSmoke(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);updateWaves(dt);updateAir(dt);checkClear();
+  updateGrenades(dt);updateSmoke(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);updateShip(dt);updateWaves(dt);updateAir(dt);checkClear();
   if(tankSmoke&&Math.random()<dt*7)spawnP(tankSmoke.x+(Math.random()-.5),tankSmoke.y,tankSmoke.z+(Math.random()-.5),(Math.random()-.5)*.4,1.4+Math.random(),(Math.random()-.5)*.4,0x2c2c2c,.5,3.2,-.4,.6);
   if(smoke2&&Math.random()<dt*9)spawnP(smoke2.x+(Math.random()-.5)*1.5,smoke2.y,smoke2.z+(Math.random()-.5)*1.5,(Math.random()-.5)*.4,1.5+Math.random(),(Math.random()-.5)*.4,0x242424,.6,3.5,-.4,.7);
   nextBoom-=dt;if(nextBoom<=0){nextBoom=12+Math.random()*20;sfx('far',.7);shake+=.04;flashT=Math.max(flashT,.12)}
@@ -1869,7 +1900,7 @@ function frame(now){
   const sx=shake>0?(Math.random()-.5)*shake:0,sy=shake>0?(Math.random()-.5)*shake:0;
   camera.position.set(P.x,P.y+(dead?.35:eyeH),P.z);
   camera.rotation.set(pitch+sx+kick*.01,yaw+sy,dead?1.2:camRoll);
-  sky.position.copy(camera.position);
+  sky.position.copy(camera.position);{const uw=document.getElementById('uw');uw.style.opacity=(WATER_ON&&camera.position.y<SEA_Y&&!dead)?.5:0}
   renderer.clear();renderer.render(scene,camera);
   renderer.clearDepth();if(!dead)renderer.render(vmScene,vmCam);
   if(locked&&!dead)updateHUD(dt);
