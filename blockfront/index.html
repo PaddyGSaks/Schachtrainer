@@ -197,10 +197,12 @@ body.touch #toasts{top:12%;font-size:14px}
     <div class="grp" data-s="2"><div class="gl">LAND (KRIEGSTEILNEHMER)</div><div class="chips" id="cLand"></div></div>
     <div class="grp" data-s="2f"><div class="gl">EINSATZ</div><div class="chips" id="cMode"></div></div>
     <div class="grp" data-s="2f"><div class="gl">SCHAUPLATZ</div><div class="chips" id="cTheme"></div></div>
-    <div class="grp" data-s="3"><div class="gl">UNIFORM</div><div class="chips" id="cUni"></div></div>
-    <div class="grp" data-s="3"><div class="gl">PRIMÄRWAFFE</div><div class="chips" id="cPrim"></div></div>
-    <div class="grp" data-s="3"><div class="gl">SPEZIALWAFFE</div><div class="chips" id="cSpec"></div></div>
-    <div class="grp" data-s="4"><div class="gl">STÜTZPUNKT</div><div class="chips" id="cBase"></div></div>
+    <div class="grp" data-s="3"><div class="gl">ROLLE</div><div class="chips" id="cRole"></div></div>
+    <div class="grp" data-s="3v"><div class="gl">PANZER</div><div class="chips" id="cVeh"></div></div>
+    <div class="grp" data-s="4"><div class="gl">UNIFORM</div><div class="chips" id="cUni"></div></div>
+    <div class="grp" data-s="4"><div class="gl">PRIMÄRWAFFE</div><div class="chips" id="cPrim"></div></div>
+    <div class="grp" data-s="4"><div class="gl">SPEZIALWAFFE</div><div class="chips" id="cSpec"></div></div>
+    <div class="grp" data-s="5"><div class="gl">STÜTZPUNKT</div><div class="chips" id="cBase"></div></div>
     <div id="setupinfo"></div>
   </div>
   <div id="setupnav"><button class="btn" id="backBtn">ZURÜCK</button><button class="btn" id="nextBtn">WEITER</button><button class="btn" id="startBtn">EINSATZ STARTEN</button></div>
@@ -280,6 +282,42 @@ const VEHICLES={
   pl:{tank:{name:'Cromwell (1. Polnische Panzerdivision)',hp:450,speed:6.2,cd:1.9},plane:{name:'Spitfire (Staffel 303)',hp:280,spd:1,turn:1.15}},
   au:{tank:{name:'Matilda II',hp:480,speed:4.5,cd:2.1},plane:{name:'P-40 Kittyhawk',hp:300,spd:1,turn:1}},
   it:{tank:{name:'Fiat M13/40',hp:340,speed:5,cd:1.8},plane:{name:'Macchi C.202 Folgore',hp:270,spd:1.05,turn:1.1}}};
+const ALLT=['semi','bolt','ar','smg','mg','sniper','shotgun'];
+const ROLES={
+  rifle:{name:'Schütze',desc:'Vielseitiger Infanterist: Gewehr, Maschinenpistole oder Schrotflinte, dazu Raketenwerfer oder Flammenwerfer nach Wahl.',types:['semi','bolt','ar','smg','shotgun'],spec:'any'},
+  sniper:{name:'Scharfschütze',desc:'Präzise Gewehre mit Zielfernrohr, leiserer Schuss (Gegner hören dich später), mehr Patronen, geringere Streuung.',types:['sniper'],spec:'any'},
+  mg:{name:'MG-Schütze',desc:'Schweres Dauerfeuer mit viel zusätzlicher Munition, aber etwas langsamer.',types:['mg'],spec:'any'},
+  flame:{name:'Flammentrupp',desc:'Flammenwerfer mit 150 % Treibstoff und eine Nahkampfwaffe (Maschinenpistole oder Schrotflinte).',types:['smg','shotgun'],spec:'flame'},
+  smoke:{name:'Nebeltrupp',desc:'Wirft Nebelgranaten (Rauch), die Feinden die Sicht nehmen. Keine Giftgase: Die kamen in dieser Zeit auf den Schlachtfeldern nicht zum Einsatz.',types:['smg','semi','bolt','ar'],spec:'smoke'},
+  at:{name:'Panzerjäger',desc:'Raketenwerfer mit 2 zusätzlichen Raketen, dazu Gewehr oder Maschinenpistole.',types:['semi','bolt','smg','ar'],spec:'rocket'},
+  pioneer:{name:'Pionier',desc:'Baut Deckung: dreifacher Blockvorrat und 5 Handgranaten.',types:['smg','shotgun','semi','bolt'],spec:'any'},
+  tank:{name:'Panzerfahrer',desc:'Du startest in deinem Panzer (wähle den Typ) und führst die Kameraden an. Seitenwaffe: Pistolen-Klasse.',types:['smg','semi','bolt'],spec:'any'},
+  pilot:{name:'Jagdpilot',desc:'Du fliegst ein Jagdflugzeug (wähle das Muster).',types:ALLT,spec:'any'},
+  gunner:{name:'Flak-Schütze',desc:'Du bedienst die Flak-Geschütze deines Lagers.',types:ALLT,spec:'any'}};
+const TANKLIST={
+  usa:[{id:'stuart',name:'M5 Stuart',year:1941,hp:260,speed:7.6,cd:1.3,dmg:150},{id:'sherman',name:'M4 Sherman',year:1942,hp:400,speed:6,cd:1.8,dmg:220},{id:'m10',name:'M10 Wolverine',year:1942,hp:360,speed:6.2,cd:1.9,dmg:240},{id:'pershing',name:'M26 Pershing',year:1945,hp:520,speed:5.5,cd:2.2,dmg:260}],
+  uk:[{id:'matilda',name:'Matilda II',year:1940,hp:480,speed:4.5,cd:2.1,dmg:200},{id:'churchill',name:'Churchill',year:1942,hp:520,speed:4.8,cd:2,dmg:220},{id:'cromwell',name:'Cromwell',year:1943,hp:420,speed:6.6,cd:1.8,dmg:210},{id:'firefly',name:'Sherman Firefly',year:1944,hp:410,speed:5.8,cd:2.2,dmg:270}],
+  ussr:[{id:'t3476',name:'T-34/76',year:1941,hp:420,speed:6.4,cd:1.9,dmg:210},{id:'kv1',name:'KW-1',year:1941,hp:520,speed:4.4,cd:2.3,dmg:230},{id:'t3485',name:'T-34/85',year:1944,hp:460,speed:6.2,cd:1.9,dmg:250},{id:'is2',name:'IS-2',year:1944,hp:600,speed:4.6,cd:2.8,dmg:320}],
+  fr:[{id:'b1',name:'Char B1 bis',year:1940,hp:480,speed:4.5,cd:2.2,dmg:210},{id:'s35',name:'Somua S35',year:1940,hp:400,speed:6,cd:1.9,dmg:200},{id:'shermanfr',name:'M4 Sherman (Freie Franzosen)',year:1944,hp:400,speed:6,cd:1.8,dmg:220}],
+  de:[{id:'pz3',name:'Panzer III',year:1940,hp:360,speed:6,cd:1.8,dmg:190},{id:'pz4',name:'Panzer IV',year:1941,hp:420,speed:5.8,cd:1.8,dmg:220},{id:'stug',name:'Sturmgeschütz III',year:1942,hp:380,speed:5.5,cd:2,dmg:230},{id:'tiger',name:'Tiger I',year:1942,hp:640,speed:4.2,cd:2.7,dmg:310},{id:'panther',name:'Panther',year:1943,hp:520,speed:6,cd:2.2,dmg:270}],
+  jp:[{id:'hago',name:'Typ 95 Ha-Go',year:1936,hp:240,speed:6.6,cd:1.5,dmg:140},{id:'chiha',name:'Typ 97 Chi-Ha',year:1938,hp:320,speed:5.5,cd:1.7,dmg:170},{id:'chihe',name:'Typ 1 Chi-He',year:1941,hp:380,speed:5.6,cd:1.8,dmg:200}],
+  ca:[{id:'ram',name:'Ram',year:1942,hp:380,speed:5.8,cd:1.9,dmg:200},{id:'shermanca',name:'M4 Sherman',year:1942,hp:400,speed:6,cd:1.8,dmg:220},{id:'fireflyca',name:'Sherman Firefly',year:1944,hp:410,speed:5.8,cd:2.2,dmg:270}],
+  au:[{id:'matildaau',name:'Matilda II',year:1941,hp:480,speed:4.5,cd:2.1,dmg:200},{id:'grant',name:'M3 Grant',year:1942,hp:430,speed:5,cd:2,dmg:200}],
+  pl:[{id:'7tp',name:'7TP',year:1939,hp:240,speed:6.2,cd:1.5,dmg:150},{id:'cromwellpl',name:'Cromwell',year:1943,hp:420,speed:6.6,cd:1.8,dmg:210},{id:'shermanpl',name:'M4 Sherman',year:1944,hp:400,speed:6,cd:1.8,dmg:220}],
+  it:[{id:'l3',name:'L3/35',year:1935,hp:160,speed:7,cd:1.2,dmg:110},{id:'m13',name:'Fiat M13/40',year:1940,hp:340,speed:5,cd:1.8,dmg:190},{id:'p26',name:'P 26/40',year:1943,hp:420,speed:5,cd:2.1,dmg:230}]};
+const PLANELIST={
+  usa:[{id:'f4f',name:'F4F Wildcat',year:1940,hp:260,spd:1,turn:1.05},{id:'p40us',name:'P-40 Warhawk',year:1941,hp:300,spd:1,turn:1},{id:'f6f',name:'F6F Hellcat',year:1943,hp:340,spd:1.05,turn:1},{id:'p51',name:'P-51 Mustang',year:1943,hp:320,spd:1.12,turn:1}],
+  uk:[{id:'hurricane',name:'Hawker Hurricane',year:1937,hp:300,spd:.98,turn:1.05},{id:'spitfire',name:'Spitfire',year:1938,hp:280,spd:1.05,turn:1.15},{id:'typhoon',name:'Hawker Typhoon',year:1942,hp:330,spd:1.1,turn:.95}],
+  ussr:[{id:'i16',name:'I-16',year:1934,hp:230,spd:.95,turn:1.1},{id:'yak1',name:'Jak-1',year:1941,hp:260,spd:1.05,turn:1.1},{id:'yak3',name:'Jak-3',year:1944,hp:270,spd:1.1,turn:1.12}],
+  fr:[{id:'ms406',name:'Morane-Saulnier MS.406',year:1938,hp:240,spd:.97,turn:1.02},{id:'d520',name:'Dewoitine D.520',year:1938,hp:260,spd:1.02,turn:1.05}],
+  de:[{id:'bf109',name:'Bf 109',year:1937,hp:290,spd:1.05,turn:1},{id:'fw190',name:'Fw 190',year:1941,hp:320,spd:1.1,turn:1.02}],
+  jp:[{id:'ki27',name:'Ki-27',year:1937,hp:210,spd:.97,turn:1.25},{id:'zero',name:'A6M Zero',year:1940,hp:230,spd:1,turn:1.2},{id:'ki43',name:'Ki-43 Hayabusa',year:1941,hp:220,spd:1,turn:1.22}],
+  ca:[{id:'hurricaneca',name:'Hawker Hurricane (RCAF)',year:1939,hp:300,spd:.98,turn:1.05},{id:'typhoonca',name:'Hawker Typhoon',year:1942,hp:330,spd:1.1,turn:.95}],
+  au:[{id:'kitty',name:'P-40 Kittyhawk',year:1942,hp:300,spd:1,turn:1},{id:'spitau',name:'Spitfire',year:1942,hp:280,spd:1.05,turn:1.15}],
+  pl:[{id:'p11',name:'PZL P.11',year:1934,hp:220,spd:.93,turn:1.15},{id:'hurrpl',name:'Hawker Hurricane (Staffel 303)',year:1940,hp:300,spd:.98,turn:1.05},{id:'spit303',name:'Spitfire (Staffel 303)',year:1941,hp:280,spd:1.05,turn:1.15}],
+  it:[{id:'mc200',name:'Macchi C.200 Saetta',year:1939,hp:250,spd:1,turn:1.05},{id:'mc202',name:'Macchi C.202 Folgore',year:1941,hp:270,spd:1.07,turn:1.1}]};
+function chosenTank(){const l=TANKLIST[CFG.country];return l.find(t=>t.id===CFG.tank)||l.filter(t=>t.year<=(BATTLES[CFG.battle]?BATTLES[CFG.battle].year:1945))[0]||l[0]}
+function chosenPlane(){const l=PLANELIST[CFG.country];return l.find(t=>t.id===CFG.plane)||l[0]}
 const BATTLES={
   dday:{short:'D-Day',name:'D-Day – Landung in der Normandie',date:'6. Juni 1944',year:1944,theme:'coast',variant:'beach',att:['usa','uk','ca','au','fr','pl'],def:['de'],attMode:'assault',defMode:'defense',
     desc:'Alliierte Truppen landen an den Stränden der Normandie und stürmen den Atlantikwall.',
@@ -319,7 +357,7 @@ const BASEOPTS={
   defense:[['bunker','Gefechtsbunker','Start im Bunker, volle Deckung'],['gun','Flak-Stellung','Start neben dem Flak-Geschütz'],['tank','Panzerdepot','Start neben dem Panzer, weniger Kameraden']],
   flak:[['g0','Geschütz Ost','Start am östlichen Geschütz'],['g1','Geschütz Süd','Start am südlichen Geschütz'],['g2','Geschütz West','Start am westlichen Geschütz'],['g3','Geschütz Nord','Start am nördlichen Geschütz']],
   air:[['home','Heimatflugplatz','Start über dem Platz in Mittelhöhe'],['high','Hochflug','Start in großer Höhe, guter Überblick'],['west','Küstenstützpunkt','Start am Westrand, Flug Richtung Feind']]};
-const baseOptsFor=m=>m==='defense'?BASEOPTS.defense:m==='flak'?BASEOPTS.flak:m==='air'?BASEOPTS.air:BASEOPTS.ground;
+const baseOptsFor=(m,bt)=>{const o=m==='defense'?BASEOPTS.defense:m==='flak'?BASEOPTS.flak:m==='air'?BASEOPTS.air:BASEOPTS.ground;return bt==='berlin'&&(m==='urban'||m==='defense')?[['reichstag','Im Reichstag','Start direkt in der Parlamentshalle mit den vielen Fahnen']].concat(o):o};
 const ANTHEMS={
   usa:{name:'The Star-Spangled Banner',notes:[['G4',.75],['E4',.25],['C4',1],['E4',1],['G4',1],['C5',2],['E5',.75],['D5',.25],['C5',1],['E4',1],['F#4',1],['G4',2],['G4',.75],['G4',.25],['E5',1],['D5',1],['C5',1],['B4',1],['A4',1],['B4',1],['C5',3]]},
   uk:{name:'God Save the King',notes:[['C4',1],['C4',1],['D4',1],['B3',1.5],['C4',.5],['D4',1],['E4',1],['E4',1],['F4',1],['E4',1.5],['D4',.5],['C4',1],['D4',1],['C4',1],['B3',1],['C4',3]]},
@@ -386,7 +424,7 @@ const WB={
   sniper:{mag:5,res:25,cd:1,dmg:95,head:200,spread:.0006,auto:false,reload:2.8,zoom:18,pellets:1,range:240,kick:1.6,snd:'sniper',noise:70,model:'sniper'},
   shotgun:{mag:6,res:30,cd:.75,dmg:14,head:28,spread:.05,auto:false,reload:2.4,zoom:60,pellets:8,range:40,kick:1.5,snd:'shotgun',noise:45,model:'shotgun'}};
 const PRIMARIES={};
-const addW=(id,b,name,desc,o={})=>{PRIMARIES[id]={name,desc,...WB[b],...o}};
+const addW=(id,b,name,desc,o={})=>{PRIMARIES[id]={name,desc,type:b,...WB[b],...o}};
 addW('garand','semi','M1 Garand','Halbautomatisches Standardgewehr der US-Armee.');
 addW('thompson','smg','Thompson M1A1','Maschinenpistole mit schnellem Feuer.');
 addW('bar','mg','BAR M1918','Automatikgewehr: kräftiges Dauerfeuer.',{mag:20,res:120,cd:.12,dmg:30,head:60,spread:.01,reload:2.8,range:150});
@@ -440,6 +478,7 @@ addS('type4','rocket','Typ-4-Raketenwerfer','Japanischer 70-mm-Raketenwerfer: 3 
 addS('flame_jp','flame','Flammenwerfer Typ 93','Japanischer Flammenwerfer.');
 addS('faust_it','rocket','Panzerfaust (deutsche Lieferung)','Von den Deutschen gelieferte Einwegwaffe: 3 Schuss.',{start:3,chest:3,cd:1.8,dmg:175,speed:27});
 addS('flame_it','flame','Lanciafiamme Mod. 35','Italienischer Flammenwerfer.');
+addS('smoke','smoke','Nebelgranaten','Rauchgranaten: dichter Nebel verdeckt dich und deine Kameraden vor den Gegnern.',{start:8,chest:4,cd:1,speed:0})
 let LEVEL=1,CARRY=0,lvlHP=1,lvlDmg=1,lvlAcc=0,nextOpen=false;
 let CFG={country:'usa',uniform:0,mode:'assault',theme:'europe',primary:'garand',special:'bazooka',enemy:'de'};
 let THEME=THEMES.europe,W1=PRIMARIES.garand,SPEC=SPECIALS.bazooka;
@@ -520,7 +559,9 @@ function applyBaseSpawn(){
     else if(b==='front'){const f={assault:[31.5,31.5],trench:[45.5,21.5],urban:[34.5,19.5]}[M];SPAWN.x=f[0];SPAWN.z=f[1]}}
   else if(M==='defense'){if(b==='bunker'){SPAWN.x=C.x-3;SPAWN.z=C.z+2}else if(b==='gun'){SPAWN.x=C.x+11;SPAWN.z=C.z+3}else if(b==='tank'){SPAWN.x=Math.floor(TANKZ.x)+.5;SPAWN.z=Math.floor(TANKZ.z)+5.5}}
   else if(M==='flak'){const gp=[[14,3],[3,14],[-12,6],[-3,-13]];FLAKIDX=Math.max(0,['g0','g1','g2','g3'].indexOf(b));SPAWN.x=C.x+gp[FLAKIDX][0];SPAWN.z=C.z+gp[FLAKIDX][1]+4}
-  else if(M==='air'){if(b==='west'){SPAWN.x=14;SPAWN.z=48}}}
+  else if(M==='air'){if(b==='west'){SPAWN.x=14;SPAWN.z=48}}
+  if(b==='reichstag'&&(M==='urban'||M==='defense')){SPAWN.x=C.x-7.5;SPAWN.z=C.z+.5}
+  if(CFG.role==='tank'&&M!=='air'&&M!=='flak'&&b!=='reichstag'){TANKZ.x=SPAWN.x;TANKZ.z=SPAWN.z}}
 function generateWorld(){
   const M=CFG.mode;
   const hf=new Float32Array(W*D);const base=(x,z)=>VARIANT==='beach'?7+((x+z)/(W+D-2))*20+fbm(x,z)*3:M==='urban'?12:M==='air'?6+fbm(x,z)*7:10+fbm(x,z)*11;
@@ -743,7 +784,7 @@ let sel=0;
 const enemies=[],items=[],grenadeList=[];
 
 /* ---------- Partikel / Tracer ---------- */
-const PN=320,pool=[],pgeo=new THREE.BoxGeometry(1,1,1);let pIdx=0;
+const PN=480,pool=[],pgeo=new THREE.BoxGeometry(1,1,1);let pIdx=0;
 for(let i=0;i<PN;i++){const m=new THREE.Mesh(pgeo,new THREE.MeshBasicMaterial({color:0xffffff}));m.visible=false;scene.add(m);pool.push({m,life:0,max:1,vx:0,vy:0,vz:0,g:0,size:.1,grow:0})}
 function spawnP(x,y,z,vx,vy,vz,color,size,life,g=18,grow=0){const p=pool[pIdx++%PN];p.life=p.max=life;p.vx=vx;p.vy=vy;p.vz=vz;p.g=g;p.size=size;p.grow=grow;
   p.m.material.color.setHex(color);p.m.position.set(x,y,z);p.m.scale.setScalar(size);p.m.visible=true}
@@ -821,7 +862,7 @@ function updateEnemy(e,dt){
   e.losT-=dt;
   if(e.losT<=0){e.losT=.2+Math.random()*.1;e.los=false;const range=e.sniper?75:40;
     if(dist<range){const len=Math.hypot(dist,dy)||1;
-      if(!voxelRay(e.x,e.y+1.55,e.z,dx/len,dy/len,dz/len,len,0)){
+      if(!voxelRay(e.x,e.y+1.55,e.z,dx/len,dy/len,dz/len,len,0)&&!smokeBlocks(e.x,e.y+1.55,e.z,T.x,tyy,T.z)){
         const fx=Math.sin(e.yaw),fz=Math.cos(e.yaw);const cosA=(dx*fx+dz*fz)/Math.max(dist,.001);
         if(dist<9||cosA>.25||e.alert>0)e.los=true}}}
   if(e.los){e.alert=8;e.lastX=T.x;e.lastZ=T.z;e.aim+=dt}else{e.alert=Math.max(0,e.alert-dt);e.aim=Math.max(0,e.aim-dt*2)}
@@ -879,7 +920,7 @@ function damagePlayer(amt,sx,sz,quiet){
     if(sx!==undefined){const dx=sx-P.x,dz=sz-P.z;const fx=-Math.sin(yaw),fz=-Math.cos(yaw),rx=Math.cos(yaw),rz=-Math.sin(yaw);
       const df=dx*fx+dz*fz,dr=dx*rx+dz*rz;const k=Math.abs(df)>Math.abs(dr)?(df>0?'T':'B'):(dr>0?'R':'L');dmgT[k]=1}}
   if(hp<=0){hp=0;die()}}
-let wireT=0,sprintLock=false,sinceShot=9,flagNear=false;
+let SPD=1,wireT=0,sprintLock=false,sinceShot=9,flagNear=false;
 function onWire(e){const x=Math.floor(e.x),z=Math.floor(e.z);return getB(x,Math.floor(e.y+.3),z)===B.WIRE||getB(x,Math.floor(e.y+1),z)===B.WIRE}
 function clearWire(T){const x0=Math.floor(T.x-1.7),x1=Math.floor(T.x+1.7),z0=Math.floor(T.z-1.7),z1=Math.floor(T.z+1.7),y0=Math.floor(T.y);
   for(let y=y0;y<=y0+2;y++)for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++)if(getB(x,y,z)===B.WIRE)setB(x,y,z,0)}
@@ -931,15 +972,25 @@ function startReload(){if(inTank||reloading>0||mag>=MAGSIZE||reserve<=0||slots[s
 function finishReload(){const n=Math.min(MAGSIZE-mag,reserve);mag+=n;reserve-=n}
 function hitMark(head){const h=document.getElementById('hitmark');h.className=head?'head':'';h.style.opacity=1;hmT=.18}
 let hmT=0;
-function throwGrenade(){if(inTank||grenades<=0||gCd>0||dead)return;grenades--;gCd=.9;sfx('pin');const f=forwardVec();
-  const m=new THREE.Mesh(new THREE.BoxGeometry(.16,.22,.16),new THREE.MeshLambertMaterial({color:0x34421f}));scene.add(m);
-  grenadeList.push({x:P.x+f[0]*.5,y:P.y+1.5+f[1]*.5,z:P.z+f[2]*.5,vx:f[0]*15+P.vx*.5,vy:f[1]*15+3.5,vz:f[2]*15+P.vz*.5,w:.12,h:.24,fuse:2.6,m,onGround:false,bx:false,landV:0})}
+function throwGrenade(smoke){if(inTank||(!smoke&&grenades<=0)||gCd>0||dead)return;if(!smoke)grenades--;gCd=.9;sfx('pin');const f=forwardVec();
+  const m=new THREE.Mesh(new THREE.BoxGeometry(.16,.22,.16),new THREE.MeshLambertMaterial({color:smoke?0xb0b4a8:0x34421f}));scene.add(m);
+  grenadeList.push({x:P.x+f[0]*.5,y:P.y+1.5+f[1]*.5,z:P.z+f[2]*.5,vx:f[0]*15+P.vx*.5,vy:f[1]*15+3.5,vz:f[2]*15+P.vz*.5,w:.12,h:.24,fuse:smoke?1.4:2.6,smoke:!!smoke,m,onGround:false,bx:false,landV:0})}
+const smokeClouds=[];
+function smokeBlocks(x0,y0,z0,x1,y1,z1){
+  for(const c of smokeClouds){const dx=x1-x0,dy=y1-y0,dz=z1-z0,L2=dx*dx+dy*dy+dz*dz||1;let t=((c.x-x0)*dx+(c.y-y0)*dy+(c.z-z0)*dz)/L2;t=Math.max(0,Math.min(1,t));
+    const px=x0+dx*t-c.x,py=y0+dy*t-c.y,pz=z0+dz*t-c.z;if(px*px+py*py+pz*pz<c.r*c.r)return true}
+  return false}
+function makeSmoke(x,y,z){smokeClouds.push({x,y:y+1,z,t:14,r:4.4,p:0});sfx('pin')}
+function updateSmoke(dt){for(let i=smokeClouds.length-1;i>=0;i--){const c=smokeClouds[i];c.t-=dt;c.p-=dt;
+  if(c.p<=0&&c.t>1){c.p=.06;for(let k=0;k<3;k++){const a=Math.random()*6.28,r=Math.random()*c.r*.8;spawnP(c.x+Math.cos(a)*r,c.y-.5+Math.random()*2.6,c.z+Math.sin(a)*r,(Math.random()-.5)*.3,.2+Math.random()*.3,(Math.random()-.5)*.3,0xdadada,1.8+Math.random()*1.2,2.4,-.05,.3)}}
+  if(c.t<=0)smokeClouds.splice(i,1)}}
+function fireSmoke(){if(rockets<=0){toast('Keine Nebelgranaten mehr');return}if(gCd>0)return;rockets--;throwGrenade(true);buildHotbar()}
 function updateGrenades(dt){for(let i=grenadeList.length-1;i>=0;i--){const g=grenadeList[i];g.fuse-=dt;g.vy-=22*dt;
   const ovx=g.vx,ovz=g.vz,ovy=g.vy;moveEnt(g,dt);
   if(g.bx){if(g.vx===0)g.vx=-ovx*.35;if(g.vz===0)g.vz=-ovz*.35}
   if(g.onGround){g.vx*=.82;g.vz*=.82;g.vy=Math.abs(ovy)>3?-ovy*.3:0;if(g.vy<0)g.vy=0;if(Math.abs(ovy)>3)g.vy=-ovy*.3}
   g.m.position.set(g.x,g.y+.12,g.z);g.m.rotation.x+=dt*8;g.m.rotation.z+=dt*5;
-  if(g.fuse<=0){explode(g.x,g.y+.1,g.z);scene.remove(g.m);grenadeList.splice(i,1)}}}
+  if(g.fuse<=0){if(g.smoke)makeSmoke(g.x,g.y,g.z);else explode(g.x,g.y+.1,g.z);scene.remove(g.m);grenadeList.splice(i,1)}}}
 function explode(x,y,z,R=3.3,dmgMax=160,R2=7,hostile=false){
   sfx('boom',1);
   const bx0=Math.floor(x-R-1),bx1=Math.floor(x+R+1),by0=Math.floor(y-R-1),by1=Math.floor(y+R+1),bz0=Math.floor(z-R-1),bz1=Math.floor(z+R+1);
@@ -989,7 +1040,7 @@ function updatePlayer(dt){
   if(wantCrouch&&!crouching){crouching=true;P.h=1.3}
   else if(!wantCrouch&&crouching&&!collides(P.x,P.y,P.z,P.w,1.8)){crouching=false;P.h=1.8}
   eyeH+=((crouching?1.2:1.62)-eyeH)*Math.min(1,dt*14);
-  let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint||(sprintLock&&mz>0))&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;if(crouching)speed=Math.min(speed,2.3);
+  let speed=4.3;if(((keys.ShiftLeft||keys.ShiftRight)&&mz>0||joy.sprint||(sprintLock&&mz>0))&&ads<.3)speed=6.4;if(ads>.5)speed=2.2;if(crouching)speed=Math.min(speed,2.3);speed*=SPD;
   const inWire=getB(Math.floor(P.x),Math.floor(P.y+.3),Math.floor(P.z))===B.WIRE||getB(Math.floor(P.x),Math.floor(P.y+1),Math.floor(P.z))===B.WIRE;
   wireT-=dt;if(inWire){speed*=.35;if(wireT<=0){wireT=.35;damagePlayer(4);if(Math.random()<.5)toast('Stacheldraht!')}}
   const wx=(f[0]*mz+r[0]*mx)*speed,wz=(f[1]*mz+r[1]*mx)*speed;
@@ -1033,7 +1084,7 @@ function updateAlly(a,dt){
   a.losT-=dt;
   if(a.losT<=0){a.losT=.25+Math.random()*.15;let best=null,bd=1e9;
     for(const e of enemies){if(e.dead)continue;const dx=e.x-a.x,dz=e.z-a.z,dd=Math.hypot(dx,dz);if(dd>38||dd>=bd)continue;const dy=(e.y+1.2)-(a.y+1.5),L=Math.hypot(dd,dy);
-      if(!voxelRay(a.x,a.y+1.55,a.z,dx/L,dy/L,dz/L,L,0)){best=e;bd=dd}}
+      if(!voxelRay(a.x,a.y+1.55,a.z,dx/L,dy/L,dz/L,L,0)&&!smokeBlocks(a.x,a.y+1.55,a.z,e.x,e.y+1.2,e.z)){best=e;bd=dd}}
     a.tgt=best;a.tgtD=bd}
   const e=a.tgt&&!a.tgt.dead?a.tgt:null;
   const fx=P.x+Math.cos(a.slot*1.3+.5)*4.5,fz=P.z+Math.sin(a.slot*1.3+.5)*4.5;
@@ -1069,7 +1120,7 @@ function fireTank(){
   if(curGun){fireGun();return}
   if(TANK.kind==='plane'){firePlane();return}
   if(tankCd>0)return;tankCd=TANK.info.cd;kick=1.2;shake+=.05;sfx('rocket');
-  const f=forwardVec();spawnRocket(P.x+f[0]*3.2,P.y+eyeH-.75+f[1]*3.2,P.z+f[2]*3.2,f,46,true,4,220);alertEnemies(P.x,P.z,80)}
+  const f=forwardVec();spawnRocket(P.x+f[0]*3.2,P.y+eyeH-.75+f[1]*3.2,P.z+f[2]*3.2,f,46,true,4,TANK.info.dmg||220);alertEnemies(P.x,P.z,80)}
 function updateRockets(dt){
   for(let i=rocketList.length-1;i>=0;i--){const r=rocketList[i];r.life-=dt;r.vy-=r.g*dt;
     const sp=Math.hypot(r.vx,r.vy,r.vz),dx=r.vx/sp,dy=r.vy/sp,dz=r.vz/sp,step=sp*dt;
@@ -1094,13 +1145,13 @@ function makeChest(x,y,z,kind){
   g.position.set(x,y,z);scene.add(g);chests.push({x,y,z,kind,opened:false,lid,t:0,g})}
 function openChest(c){c.opened=true;sfx('pick');
   if(c.kind==='launcher'){hasLauncher=true;rockets+=3;toast('RAKETENWERFER gefunden! +3 Raketen (Slot 3)');selectSlot(2)}
-  else{rockets+=SPEC.chest;toast('+'+SPEC.chest+(SPEC.kind==='flame'?' % Treibstoff':' Raketen'));spawnItem('med',c.x+1.2,c.y,c.z)}
+  else{rockets+=SPEC.chest;toast('+'+SPEC.chest+(SPEC.kind==='flame'?' % Treibstoff':SPEC.kind==='smoke'?' Nebelgranaten':' Raketen'));spawnItem('med',c.x+1.2,c.y,c.z)}
   buildHotbar();for(let i=0;i<12;i++)spawnP(c.x,c.y+.7,c.z,(Math.random()-.5)*2,1+Math.random()*2,(Math.random()-.5)*2,0xffd24a,.1,.8,8)}
 function updateChests(dt){for(const c of chests)if(c.opened&&c.t<1){c.t=Math.min(1,c.t+dt*2.5);c.lid.rotation.x=-c.t*1.9}}
 // Panzer
 const TANK={x:0,y:0,z:0,vx:0,vy:0,vz:0,w:1.5,h:2,yaw:Math.atan2(-1,-1),speed:0,onGround:false,bx:false,landV:0,hp:400,alive:true,g:null,turret:null,barrel:null};
 function initTank(x,y,z){
-  const own=CFG.mode==='defense',info=own?VEH.friend.tank:VEH.enemy.tank,pal=own?PAL.friend:PAL.enemy;
+  const own=CFG.mode==='defense'||CFG.role==='tank',info=own?VEH.friend.tank:VEH.enemy.tank,pal=own?PAL.friend:PAL.enemy;
   const g=new THREE.Group();g.rotation.order='YXZ';const M=c=>new THREE.MeshLambertMaterial({color:c});const tint=[];
   const add=(par,w,h,d,c,px,py,pz)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),M(c));m.position.set(px,py,pz);par.add(m);return m};
   tint.push([add(g,2.2,.8,4.4,pal.uni,0,.7,0),'h']);add(g,.75,.95,4.9,0x33352c,-1.25,.55,0);add(g,.75,.95,4.9,0x33352c,1.25,.55,0);tint.push([add(g,1.6,.3,1.2,pal.uni,0,1.2,1.6),'h']);
@@ -1142,9 +1193,10 @@ function updateTank(dt){
     T.turret.rotation.y=(yaw+Math.PI)-T.yaw;T.barrel.rotation.x=-clamp(pitch,-.3,.6)}}
 function nearTank(){const T=TANK;return T.alive&&T.g&&Math.hypot(P.x-T.x,P.z-T.z)<3.8&&Math.abs(P.y-T.y)<2.6}
 function nearChest(){for(const c of chests)if(!c.opened&&Math.hypot(P.x-c.x,P.z-c.z)<2.4&&Math.abs(P.y-c.y)<2.5)return c;return null}
-function enterTank(){inTank=true;crouching=false;crouchToggle=false;P.h=1.8;lmb=rmb=false;adsToggle=false;TANK.speed=0;
+function enterTank(silent){inTank=true;crouching=false;crouchToggle=false;P.h=1.8;lmb=rmb=false;adsToggle=false;TANK.speed=0;
   const cb=document.getElementById('bCrouch');if(cb)cb.style.background='';labelButtons();buildHotbar();
-  tintTank(PAL.friend);toast(TANK.info.name+' erobert! Fahren: Joystick/WASD · FEUER = Kanone · E = aussteigen')}
+  tintTank(PAL.friend);if(!silent)toast(TANK.info.name+(CFG.role==='tank'?' bereit! ':' erobert! ')+'Fahren: Joystick/WASD · FEUER = Kanone · E = aussteigen')}
+function respawnTank(){const T=TANK;if(!T.g)return;T.alive=true;T.hp=T.max;T.g.visible=true;smoke2=null;T.x=SPAWN.x;T.z=SPAWN.z;T.y=gH(SPAWN.x,SPAWN.z)+1;T.vx=T.vy=T.vz=0;T.speed=0;enterTank(true)}
 function leaveTank(forced){
   const T=TANK;inTank=false;lmb=rmb=false;adsToggle=false;T.speed=0;T.vx=T.vz=0;
   const rx=Math.cos(T.yaw),rz=-Math.sin(T.yaw),fx=Math.sin(T.yaw),fz=Math.cos(T.yaw);
@@ -1204,7 +1256,7 @@ function flagTexture(kind){const c=document.createElement('canvas');c.width=48;c
   const t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;return t}
 function setupFlag(gBase){
   const geo=new THREE.PlaneGeometry(1.7,1.06);geo.translate(.85,0,0);
-  FLAG.x=BASE.x+2.5;FLAG.z=BASE.z+2.5;FLAG.prog=0;FLAG.done=CFG.mode==='defense'||CFG.mode==='flak';
+  FLAG.x=FLAGPOS?FLAGPOS.x:BASE.x+2.5;FLAG.z=FLAGPOS?FLAGPOS.z:BASE.z+2.5;FLAG.prog=0;FLAG.done=CFG.mode==='defense'||CFG.mode==='flak';
   const kind=FLAG.done?CFG.country:CFG.enemy;
   flagCloth=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:flagTexture(kind),side:THREE.DoubleSide}));
   flagTop=gBase+3.6;flagBot=gBase+1.7;flagCloth.position.set(FLAG.x+.5,flagTop,FLAG.z);scene.add(flagCloth);
@@ -1330,32 +1382,58 @@ function cityHouse(x0,z0,w,d,floors,door){
   if(door===0)fillBox(mx,g+1,z0,mx,g+3,z0,0);else if(door===1)fillBox(mx,g+1,z0+d-1,mx,g+3,z0+d-1,0);else if(door===2)fillBox(x0,g+1,mz,x0,g+3,mz,0);else fillBox(x0+w-1,g+1,mz,x0+w-1,g+3,mz,0);
   for(let i=0;i<10;i++){const x=x0-2+(rnd()*(w+4)|0),z=z0-2+(rnd()*(d+4)|0);if(x<0||z<0||x>=W||z>=D)continue;const gy=heights[HI(x,z)]+1;
     if(getB(x,gy,z)===0&&getB(x,gy-1,z)!==B.ASPHALT)setB(x,gy,z,rnd()<.7?THEME.wall:B.STONE)}}
+let FLAGPOS=null;
+function addBanners(C,g,x0,x1,z0,z1){
+  const geo=new THREE.PlaneGeometry(1.5,2.8),mat=new THREE.MeshBasicMaterial({map:flagTexture('de'),side:THREE.DoubleSide});
+  const put=(x,z,ry)=>{const m=new THREE.Mesh(geo,mat);m.position.set(x,g+5.9,z);m.rotation.y=ry;scene.add(m)};
+  for(let k=1;k<=6;k++){const x=x0+3*k+.5;put(x,z0+1.06,0);put(x,z1-.06,Math.PI)}
+  for(const dz of [-3,0,3]){put(x0+1.06,C.z+dz+.5,Math.PI/2);put(x1-.06,C.z+dz+.5,-Math.PI/2)}}
+function buildReichstag(C,opts={}){
+  const g=heights[HI(C.x,C.z)],x0=C.x-10,x1=C.x+10,z0=C.z-7,z1=C.z+7;
+  for(let y=g;y<=g+22;y++)for(let z=z0;z<=z1;z++)for(let x=x0;x<=x1;x++){
+    const wall=x===x0||x===x1||z===z0||z===z1;let id=0;
+    if(y===g)id=Math.abs(z-C.z)<=1?B.PLANKS:B.STONE;else if(y<=g+9)id=wall?B.SANDSTONE:0;else if(y===g+10)id=B.STONE;
+    setB(x,y,z,id)}
+  for(let x=x0+2;x<=x1-2;x++)if((x-x0)%3===1)for(const zz of [z0,z1])fillBox(x,g+3,zz,x,g+6,zz,0);
+  for(const zz of [C.z-3,C.z+3])for(const xx of [x0,x1])fillBox(xx,g+3,zz,xx,g+5,zz,0);
+  for(const xx of [x0,x1])fillBox(xx,g+1,C.z-1,xx,g+4,C.z+1,0);
+  for(let i=0;i<30;i++){const x=x0+(rnd()*21|0),y=g+5+(rnd()*5|0),z=rnd()<.5?z0:z1;if(getB(x,y,z)===B.SANDSTONE)setB(x,y,z,0)}
+  for(const zz of [C.z-5,C.z+5])for(let x=C.x-6;x<=C.x+6;x+=4)fillBox(x,g+1,zz,x,g+9,zz,B.STONE);
+  for(let r=4;r>=1;r--)for(let dz=-r;dz<=r;dz++)for(let dx=-r;dx<=r;dx++){const d=Math.hypot(dx,dz);if(d<=r+.3&&d>r-1.2&&!(dx===0&&dz===0))setB(C.x+dx,g+11+(4-r),C.z+dz,B.STONE)}
+  fillBox(C.x,g+11,C.z,C.x,g+19,C.z,B.METAL);
+  fillBox(C.x-2,g+1,C.z-1,C.x+2,g+1,C.z+1,B.STONE);fillBox(C.x-1,g+2,C.z+1,C.x+1,g+2,C.z+1,B.PLANKS);fillBox(C.x,g+2,C.z-1,C.x,g+8,C.z-1,B.METAL);
+  FLAGPOS={x:C.x+.5,z:C.z-.5};
+  if(opts.ring){sandWall(C.x-13,C.z-10,C.x+13,C.z-10,2,8);sandWall(C.x-13,C.z+10,C.x+13,C.z+10,2,8);sandWall(C.x-13,C.z-10,C.x-13,C.z+10,2,8);sandWall(C.x+13,C.z-10,C.x+13,C.z+10,2,8)}
+  addBanners(C,g,x0,x1,z0,z1);
+  return g}
+function reichstagSquad(C,g){
+  [[-6,-2],[-6,2],[-2,-6],[-2,6],[3,-6],[3,6],[7,-2],[7,2],[5,0],[-8,-5]].forEach(q=>spawnE(C.x+q[0],C.z+q[1],{pr:1.5}));
+  [[-12,0],[12,0],[0,10],[-8,10]].forEach(q=>spawnE(C.x+q[0],C.z+q[1],{pr:3}));
+  spawnI('ammo',C.x-5,C.z,g+1);spawnI('med',C.x+5,C.z-3,g+1);spawnI('ammo',C.x+5,C.z+3,g+1);spawnI('gren',C.x,C.z+4,g+1);spawnI('med',C.x-9,C.z+5,g+1)}
 function buildUrban(){
   const C=BASE;const isStreet=(x,z)=>x<8||z<8||x>=77||z>=77||((x-8)%15)>=9||((z-8)%15)>=9;
   for(let z=5;z<D-5;z++)for(let x=5;x<W-5;x++)if(isStreet(x,z))blocks[BI(x,heights[HI(x,z)],z)]=B.ASPHALT;
-  buildCamp();const gB=buildBase(C,{wire:false});
+  buildCamp();const RS=BTL.battle==='berlin'?buildReichstag(C):0;const gB=RS||buildBase(C,{wire:false});
   const lots=[];
   for(const lx of [8,23,38,53,68])for(const lz of [8,23,38,53,68]){
     if(Math.abs(lx+4-C.x)<14&&Math.abs(lz+4-C.z)<14)continue;if(lx<22&&lz<22)continue;
     const fl=rnd()<.5?2:1;cityHouse(lx,lz,9,9,fl,(rnd()*4)|0);lots.push({lx,lz,fl,g:heights[HI(lx+1,lz+1)]})}
   for(let i=0;i<22;i++){const x=9+(rnd()*76|0),z=9+(rnd()*76|0);if(!isStreet(x,z)||distTo(x,z,START)<13||(Math.abs(x-C.x)<12&&Math.abs(z-C.z)<12))continue;
     if(rnd()<.5)sandWall(x,z,x+2,z,2);else fillBox(x,heights[HI(x,z)]+1,z,x+2,heights[HI(x,z)]+1,z,B.METAL)}
-  placeTank();setupFlag(gB);
+  placeTank();setupFlag(RS?RS+2:gB);
   if(VARIANT==='ruins')for(let i=0;i<14;i++){const cx=10+(rnd()*76|0),cz=10+(rnd()*76|0);if(!isStreet(cx,cz)||distTo(cx,cz,START)<12)continue;
     for(let dz=-2;dz<=2;dz++)for(let dx=-2;dx<=2;dx++){const d=Math.hypot(dx,dz);if(d>2.4)continue;const x=cx+dx,z=cz+dz,h=heights[HI(x,z)],dep=Math.round(1.8*(1-(d/2.4)*(d/2.4)));
       if(dep>0){for(let y=h-dep+1;y<=h;y++)setB(x,y,z,0);setB(x,h-dep,z,B.DIRT);heights[HI(x,z)]=h-dep}}}
-  if(BTL.battle==='berlin'){const g=heights[HI(C.x,C.z)];for(let r=4;r>=1;r--)for(let dz=-r;dz<=r;dz++)for(let dx=-r;dx<=r;dx++){const d=Math.hypot(dx,dz);if(d<=r+.3&&d>r-1.2&&!(dx===0&&dz===0))setB(C.x+dx,g+7+(4-r),C.z+dz,B.STONE)}
-    for(const q of [[-5,-6],[-2,-6],[2,-6],[5,-6]])fillBox(C.x+q[0],g+1,C.z+q[1],C.x+q[0],g+5,C.z+q[1],B.STONE)}
   for(const c of [[23,23],[68,23]]){const g=heights[HI(c[0]+4,c[1]+4)];fillBox(c[0]+3,g+1,c[1]+3,c[0]+5,g+2,c[1]+5,0);makeChest(c[0]+4.5,g+1,c[1]+4.5,'rockets')}
   spawnSquad(squad(5));
   lots.forEach(l=>{if(rnd()<.45)spawnE(l.lx+5.5,l.lz+6.5,{pr:1.5});if(l.fl===2&&rnd()<.5)spawnE(l.lx+6.5,l.lz+6.5,{pr:.5,y:l.g+6})});
   for(let n=0,t=0;n<6&&t<300;t++){const x=9+(rnd()*76|0),z=9+(rnd()*76|0);if(!isStreet(x,z)||distTo(x,z,START)<26||(Math.abs(x-C.x)<14&&Math.abs(z-C.z)<14))continue;spawnE(x+.5,z+.5,{pr:4});n++}
-  baseSquad(C,gB);campItems();placeGun(C.x+8,C.z+8,Math.PI);
+  if(RS)reichstagSquad(C,RS);else baseSquad(C,gB);campItems();placeGun(C.x+(RS?0:8),C.z+(RS?11:8),Math.PI);
   lots.filter((l,i)=>i%3===0).forEach((l,i)=>spawnI(i%2?'med':'ammo',l.lx+6.5,l.lz+6.5,l.g+1))}
 
 function buildDefense(){
-  const C=BASE;const gB=buildBase(C);placeTank();
-  scatterCover(10,6);plantTrees(THEME.trees);setupFlag(gB);
+  const C=BASE;const RS=BTL.battle==='berlin'?buildReichstag(C,{ring:true}):0;const gB=RS||buildBase(C);placeTank();
+  scatterCover(10,6);plantTrees(THEME.trees);setupFlag(RS?RS+2:gB);
   const gc=heights[HI(C.x,C.z)];
   makeChest(C.x-8.5,gc+1,C.z+8.5,'rockets');makeChest(C.x+8.5,gc+1,C.z+8.5,'rockets');
   spawnSquad(squad(7));
@@ -1600,6 +1678,7 @@ buildGunModel('rifle');vm.gun.position.set(.2,-.2,-.42);vmScene.add(vm.gun);
   vbox(g,.08,.08,.08,0x4f5a30,0,-.22,0);g.position.set(.28,-.32,-.5);vmScene.add(g)})();
 function buildSpecialModel(kind){const g=vm.rocket;while(g.children.length)g.remove(g.children[0]);
   if(kind==='flame'){vbox(g,.08,.08,.9,0x33362b,0,0,-.3);vbox(g,.05,.05,.35,0x1e1e1e,0,0,-.85);vbox(g,.03,.03,.05,0xff7a20,0,0,-1.05);vbox(g,.12,.14,.2,0x555a4a,0,-.1,.15);vbox(g,.07,.07,.25,0x4f5a30,-.02,-.12,-.1)}
+  else if(kind==='smoke'){vbox(g,.09,.15,.09,0x8a8f84,0,0,-.4);vbox(g,.05,.04,.05,0x333333,0,.1,-.4);vbox(g,.07,.07,.25,0x4f5a30,-.02,-.12,-.1)}
   else{vbox(g,.1,.1,1.15,0x4c5433,0,0,-.35);vbox(g,.15,.15,.1,0x25271f,0,0,-.95);vbox(g,.15,.15,.12,0x25271f,0,0,.22);vbox(g,.05,.1,.1,0x222222,0,.1,-.2);vbox(g,.08,.08,.2,0xb5532a,0,0,-1.05);vbox(g,.07,.07,.25,0x4f5a30,-.02,-.12,-.1)}}
 buildSpecialModel('rocket');vm.rocket.position.set(.2,-.18,-.5);vmScene.add(vm.rocket);
 function updateRocketVM(dt,bxo,byo){const g=vm.rocket;
@@ -1633,7 +1712,7 @@ function updateVM(dt){
 const hud=document.getElementById('hud'),hotbarEl=document.getElementById('hotbar');
 function iconFor(i){const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');const s=slots[i];
   if(s.t==='rifle'){g.fillStyle='#6b4423';g.fillRect(1,9,5,3);g.fillRect(5,8,5,2);g.fillStyle='#333';g.fillRect(9,7,6,1);g.fillRect(9,8,2,1);g.fillStyle='#222';g.fillRect(6,10,2,2)}
-  else if(s.t==='rocket'&&SPEC.kind==='flame'){g.fillStyle='#444';g.fillRect(2,8,9,3);g.fillStyle='#222';g.fillRect(10,8,3,3);g.fillStyle='#ff7a20';g.fillRect(13,7,2,4);g.fillStyle='#ffd24a';g.fillRect(14,8,2,2)}else if(s.t==='rocket'){g.fillStyle='#4c5433';g.fillRect(2,7,12,3);g.fillStyle='#222';g.fillRect(1,6,2,5);g.fillRect(13,6,2,5);g.fillStyle='#b5532a';g.fillRect(0,7,2,3);g.fillStyle='#333';g.fillRect(5,5,3,2)}else if(s.t==='pick'){g.fillStyle='#7a5530';for(let k=0;k<11;k++)g.fillRect(2+k,13-k,1,1);g.fillStyle='#aab';g.fillRect(8,1,6,1);g.fillRect(12,2,2,2);g.fillRect(7,2,1,2);g.fillRect(6,3,1,2);g.fillRect(13,4,1,1)}
+  else if(s.t==='rocket'&&SPEC.kind==='smoke'){g.fillStyle='#8a8a8a';g.fillRect(5,5,6,8);g.fillStyle='#555';g.fillRect(6,3,4,2);g.fillStyle='#ddd';g.fillRect(2,2,3,3);g.fillRect(11,1,3,3)}else if(s.t==='rocket'&&SPEC.kind==='flame'){g.fillStyle='#444';g.fillRect(2,8,9,3);g.fillStyle='#222';g.fillRect(10,8,3,3);g.fillStyle='#ff7a20';g.fillRect(13,7,2,4);g.fillStyle='#ffd24a';g.fillRect(14,8,2,2)}else if(s.t==='rocket'){g.fillStyle='#4c5433';g.fillRect(2,7,12,3);g.fillStyle='#222';g.fillRect(1,6,2,5);g.fillRect(13,6,2,5);g.fillStyle='#b5532a';g.fillRect(0,7,2,3);g.fillStyle='#333';g.fillRect(5,5,3,2)}else if(s.t==='pick'){g.fillStyle='#7a5530';for(let k=0;k<11;k++)g.fillRect(2+k,13-k,1,1);g.fillStyle='#aab';g.fillRect(8,1,6,1);g.fillRect(12,2,2,2);g.fillRect(7,2,1,2);g.fillRect(6,3,1,2);g.fillRect(13,4,1,1)}
   else{g.drawImage(atlasCanvas,(TILES[s.id][1]&7)*16,(TILES[s.id][1]>>3)*16,16,16,0,0,16,16)}
   return c}
 function buildHotbar(){hotbarEl.innerHTML='';slots.forEach((s,i)=>{const d=document.createElement('div');d.className='slot'+(i===sel?' sel':'')+(s.t==='rocket'&&!hasLauncher?' locked':'');d.dataset.i=i;d.appendChild(iconFor(i));
@@ -1650,6 +1729,7 @@ function updateHUD(dt){
   if(inTank&&curGun)a=`<b>FLAK</b><br><small>${tankCd>0?'LADEN …':'BEREIT'} · Abschüsse ${airKills}</small>`;
   else if(inTank&&TANK.kind==='plane')a=`<b>${Math.max(0,Math.ceil(TANK.hp))}</b> / ${TANK.max}<br><small>${VEH.friend.plane.name} · ${Math.round(TANK.speed*3.6)} km/h · Höhe ${Math.round(TANK.y)} m</small>`;
   else if(inTank)a=`<b>${tankCd>0?'LADEN …':'BEREIT'}</b><br><small>${TANK.info.name} ${Math.max(0,Math.ceil(TANK.hp))} / ${TANK.max}</small>`;
+  else if(sl.t==='rocket'&&SPEC.kind==='smoke')a=`<b>${Math.ceil(rockets)}</b> Nebelgranaten<br><small>${GR_NAME} [G]: ${grenades}</small>`;
   else if(sl.t==='rocket')a=SPEC.kind==='flame'?`<b>${Math.ceil(rockets)}%</b> Treibstoff<br><small>${GR_NAME} [G]: ${grenades}</small>`:`<b>${rocketCd>.6?'LADEN …':rockets}</b> Raketen<br><small>${GR_NAME} [G]: ${grenades}</small>`;
   if(a!==lastAmmo){lastAmmo=a;document.getElementById('ammo').innerHTML=a}
   const alive=(CFG.mode==='air'||CFG.mode==='flak')?planes.filter(q=>!q.dead&&q.enemy).length:enemies.filter(e=>!e.dead).length;
@@ -1675,7 +1755,7 @@ let flashT=0;
 const menu=document.getElementById('menu'),deadEl=document.getElementById('dead');
 function cycleSlot(d){let n=sel;do{n=(n+d+slots.length)%slots.length}while(slots[n].t==='rocket'&&!hasLauncher);selectSlot(n)}
 function isGun(){return inTank||slots[sel].t==='rifle'||slots[sel].t==='rocket'}
-function primaryDown(){if(inTank)fireTank();else{const t=slots[sel].t;if(t==='rifle')fireRifle();else if(t==='rocket'){if(SPEC.kind!=='flame')fireRocket()}else swing=Math.max(swing,.01)}}
+function primaryDown(){if(inTank)fireTank();else{const t=slots[sel].t;if(t==='rifle')fireRifle();else if(t==='rocket'){if(SPEC.kind==='smoke')fireSmoke();else if(SPEC.kind!=='flame')fireRocket()}else swing=Math.max(swing,.01)}}
 function selectSlot(i){i=(i+slots.length)%slots.length;if(slots[i].t==='rocket'&&!hasLauncher){toast('Raketenwerfer fehlt noch – such die Truhe (siehe Karte)');return}sel=i;if(IS_TOUCH){adsToggle=false;rmb=false;labelButtons()}if(slots[sel].t!=='rifle'&&reloading>0)reloading=0;mineKey=null;mineProg=0;buildHotbar()}
 function labelButtons(){const r=isGun();document.getElementById('bFire').textContent=r?'FEUER':'ABBAU';document.getElementById('bAds').textContent=r?'ZIELEN':'SETZEN';
   if(IS_TOUCH){const v=inTank;document.getElementById('bFire2').classList.toggle('hidden',!v);document.getElementById('bCrouch').classList.toggle('hidden',v);document.getElementById('bRun').classList.toggle('hidden',v)}}
@@ -1747,7 +1827,7 @@ function respawn(){
   reviveAllies();yaw=-Math.PI*.75;pitch=0;mag=MAGSIZE;reserve=Math.max(reserve,40);grenades=Math.max(grenades,3);
   reloading=0;fireCd=0;kick=0;shake=0;vigT=0;lmb=rmb=false;adsToggle=false;
   for(const e of enemies){e.alert=0;e.los=false;e.aim=0}
-  if(CFG.mode==='air')resetPlane();else if(CFG.mode==='flak'&&GUNS.length)mountGun(GUNS[FLAKIDX]);
+  if(CFG.mode==='air')resetPlane();else if(CFG.mode==='flak'&&GUNS.length)mountGun(GUNS[FLAKIDX]);else if(CFG.role==='tank'&&CFG.base!=='reichstag'&&TANK.g)respawnTank();
   for(const k in dmgT)dmgT[k]=0;
   for(const k in keys)keys[k]=false;joy.x=joy.y=0;joy.sprint=false;deadEl.classList.add('hidden');menu.classList.add('hidden');toast('Neu gespawnt im Lager');
   if(IS_TOUCH)startGame();else canvas.requestPointerLock()}
@@ -1769,10 +1849,10 @@ function simulate(dt){
   if(reloading>0){reloading-=dt;if(reloading<=0){reloading=0;finishReload()}}
   sinceShot+=dt;if(slots[sel].t==='rifle'&&!inTank&&!reloading&&!lmb&&mag<MAGSIZE&&reserve>0&&(mag===0||sinceShot>2.5))startReload();
   rocketCd=Math.max(0,rocketCd-dt);tankCd=Math.max(0,tankCd-dt);
-  if(lmb){if(inTank)fireTank();else if(slots[sel].t==='rifle'&&!reloading&&W1.auto)fireRifle();else if(slots[sel].t==='rocket'){if(SPEC.kind==='flame')fireFlame(dt);else fireRocket()}}
+  if(lmb){if(inTank)fireTank();else if(slots[sel].t==='rifle'&&!reloading&&W1.auto)fireRifle();else if(slots[sel].t==='rocket'){if(SPEC.kind==='flame')fireFlame(dt);else if(SPEC.kind!=='smoke')fireRocket()}}
   updateBuild(dt);
   for(let i=0;i<n;i++){for(const e of enemies)if(!e.gone)updateEnemy(e,sub);for(const a of allies)updateAlly(a,sub)}
-  updateGrenades(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);updateWaves(dt);updateAir(dt);checkClear();
+  updateGrenades(dt);updateSmoke(dt);updateRockets(dt);updateChests(dt);updateItems(dt);updateParticles(dt);updateTracers(dt);updateFlag(dt);updateWaves(dt);updateAir(dt);checkClear();
   if(tankSmoke&&Math.random()<dt*7)spawnP(tankSmoke.x+(Math.random()-.5),tankSmoke.y,tankSmoke.z+(Math.random()-.5),(Math.random()-.5)*.4,1.4+Math.random(),(Math.random()-.5)*.4,0x2c2c2c,.5,3.2,-.4,.6);
   if(smoke2&&Math.random()<dt*9)spawnP(smoke2.x+(Math.random()-.5)*1.5,smoke2.y,smoke2.z+(Math.random()-.5)*1.5,(Math.random()-.5)*.4,1.5+Math.random(),(Math.random()-.5)*.4,0x242424,.6,3.5,-.4,.7);
   nextBoom-=dt;if(nextBoom<=0){nextBoom=12+Math.random()*20;sfx('far',.7);shake+=.04;flashT=Math.max(flashT,.12)}
@@ -1801,29 +1881,38 @@ function setSky(){const c=document.createElement('canvas');c.width=4;c.height=25
   const hex=n=>'#'+n.toString(16).padStart(6,'0');
   gr.addColorStop(0,THEME.sky[0]);gr.addColorStop(.35,THEME.sky[1]);gr.addColorStop(.5,hex(THEME.fog));gr.addColorStop(1,hex(THEME.fog));g.fillStyle=gr;g.fillRect(0,0,4,256);
   const t=new THREE.CanvasTexture(c);if(sky.material.map)sky.material.map.dispose();sky.material.map=t;sky.material.needsUpdate=true}
+function applyRole(){
+  SPD=1;const r=CFG.role||'rifle';
+  if(r==='sniper')W1={...W1,spread:W1.spread*.6,noise:Math.round(W1.noise*.45),res:W1.res+10};
+  if(r==='mg'){W1={...W1,res:W1.res+80};SPD=.9}
+  if(r==='flame')rockets=SPEC.start*1.5;
+  if(r==='at')rockets=SPEC.start+2;
+  if(r==='pioneer'){for(const k in inv)inv[k]*=3;grenades=Math.max(grenades,5)}
+  mag=W1.mag;reserve=W1.res}
 function applyConfig(){
   {const R=resolveBattle();CFG.mode=R.mode;CFG.theme=R.theme;CFG.enemy=R.enemy;VARIANT=R.variant;GOAL=R.goal;ERA=R.year;BTL=R}
   THEME=THEMES[CFG.theme];SUB=THEME.sub;
   {const co=COUNTRIES[CFG.country],eo=COUNTRIES[CFG.enemy];PAL.friend=co.uniforms[CFG.uniform]||co.uniforms[0];PAL.enemy=eo.uniforms.find(u=>u.themes&&u.themes.includes(CFG.theme))||eo.uniforms[0];
-    VEH={friend:VEHICLES[CFG.country],enemy:VEHICLES[CFG.enemy]};GR_NAME=co.grenade}
+    VEH={friend:{...VEHICLES[CFG.country],tank:chosenTank(),plane:chosenPlane()},enemy:VEHICLES[CFG.enemy]};GR_NAME=co.grenade}
   W1=PRIMARIES[CFG.primary];MAGSIZE=W1.mag;RELOAD=W1.reload;mag=W1.mag;reserve=W1.res;
   SPEC=SPECIALS[CFG.special];rockets=SPEC.start;hasLauncher=true;
   buildGunModel(W1.model);buildSpecialModel(SPEC.kind);
   scene.background.setHex(THEME.fog);scene.fog.color.setHex(THEME.fog);
   if(CFG.mode==='air'){scene.fog.near=70;scene.fog.far=240}else if(IS_TOUCH){scene.fog.near=18;scene.fog.far=70}else{scene.fog.near=26;scene.fog.far=100}
   grenades=CFG.base==='front'?5:3;AIR_ALT=CFG.base==='high'?34:18;
+  applyRole();
   kills=CARRY;lvlHP=1+Math.min(2,.12*(LEVEL-1));lvlDmg=1+Math.min(1,.06*(LEVEL-1));lvlAcc=Math.min(.25,.03*(LEVEL-1));
   WV.total=6+Math.min(6,(LEVEL-1)>>1);AIR_TARGET=(CFG.mode==='flak'?14:8)+Math.min(22,(LEVEL-1)*2);
   setSky()}
 function finishBoot(){
   buildHotbar();ready=true;
   document.getElementById('loading').classList.add('hidden');menu.classList.remove('hidden');
-  document.getElementById('mh2').textContent=`${BTL.battleName?BTL.battleName+' · ':''}LEVEL ${LEVEL} · ${COUNTRIES[CFG.country].name} (${PAL.friend.name}) gegen ${COUNTRIES[CFG.enemy].name} · ${MODES[CFG.mode].name} · ${THEME.name}`;
+  document.getElementById('mh2').textContent=`${BTL.battleName?BTL.battleName+' · ':''}LEVEL ${LEVEL} · ${COUNTRIES[CFG.country].name} (${PAL.friend.name}) gegen ${COUNTRIES[CFG.enemy].name} · ${MODES[CFG.mode].name} · ${THEME.name} · ${(ROLES[CFG.role]||ROLES.rifle).name}`;
   document.getElementById('missionText').innerHTML=(GOAL?'Du bist <b>'+BTL.role+'</b>: '+GOAL+'.':MODES[CFG.mode].text)+'<br><b>Ausrüstung:</b> '+W1.name+' · '+SPEC.name;
   window.__bf={P,enemies,items,get hp(){return hp},get kills(){return kills},get locked(){return locked},setLocked(v){locked=v;menu.classList.add('hidden');hud.classList.remove('hidden')},
-    look(y,p){yaw=y;pitch=p},winMission,get LEVEL(){return LEVEL},get lvl(){return {lvlHP,lvlDmg,lvlAcc}},allies,GUNS,bombList,BTL:()=>BTL,VARIANT:()=>VARIANT,flakList,fireGun,get curGun(){return curGun},TANK,chests,planes,CFG,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},get airKills(){return airKills},WV,tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
+    look(y,p){yaw=y;pitch=p},winMission,smokeClouds,fireSmoke,get role(){return CFG.role},get W1(){return W1},get LEVEL(){return LEVEL},get lvl(){return {lvlHP,lvlDmg,lvlAcc}},allies,GUNS,bombList,BTL:()=>BTL,VARIANT:()=>VARIANT,flakList,fireGun,get curGun(){return curGun},TANK,chests,planes,CFG,interact,fireRocket,fireTank,rocketList,get inTank(){return inTank},get rockets(){return rockets},get hasLauncher(){return hasLauncher},get airKills(){return airKills},WV,tp(x,y,z){P.x=x;P.y=y;P.z=z},keys,joy,fire:fireRifle,grenade:throwGrenade,select:selectSlot,explode,getB,
     get state(){return{mag,reserve,grenades,hp,dead,missionDone,yaw,pitch,locked,tris:renderer.info.render.triangles,calls:renderer.info.render.calls}},gH,FLAG,mouse(l,r){lmb=l;rmb=r}};
-  if(CFG.mode==='air'){resetPlane();labelButtons()}else if(CFG.mode==='flak'&&GUNS.length)mountGun(GUNS[FLAKIDX])}
+  if(CFG.mode==='air'){resetPlane();labelButtons()}else if(CFG.mode==='flak'&&GUNS.length)mountGun(GUNS[FLAKIDX]);else if(CFG.role==='tank'&&CFG.base!=='reichstag'&&TANK.g)respawnTank()}
 function boot(){
   loadEl.textContent='ERZEUGE WELT …';
   requestAnimationFrame(()=>setTimeout(()=>{
@@ -1834,37 +1923,51 @@ function boot(){
 (function setupScreen(){
   let autoNext=false,step=1;
   try{const nx=JSON.parse(localStorage.getItem('blockfront-next')||'null');localStorage.removeItem('blockfront-next');if(nx){LEVEL=nx.level||1;CARRY=nx.carry||0;autoNext=!!nx.auto}}catch(e){}
-  try{const sv=JSON.parse(localStorage.getItem('blockfront-cfg')||'null');if(sv){for(const k of['country','uniform','mode','theme','primary','special','base'])if(sv[k]!==undefined)CFG[k]=sv[k];CFG.battle=sv.battle||'free'}else CFG.battle='dday'}catch(e){CFG.battle='dday'}
+  try{const sv=JSON.parse(localStorage.getItem('blockfront-cfg')||'null');if(sv){for(const k of['country','uniform','mode','theme','primary','special','base','role','tank','plane'])if(sv[k]!==undefined)CFG[k]=sv[k];CFG.battle=sv.battle||'free'}else CFG.battle='dday'}catch(e){CFG.battle='dday'}
   if(!BATTLES[CFG.battle])CFG.battle='free';
   if(!COUNTRIES[CFG.country])CFG.country='usa';if(!MODES[CFG.mode])CFG.mode='assault';if(!THEMES[CFG.theme])CFG.theme='europe';
   const info=document.getElementById('setupinfo'),box=document.getElementById('setupbox');
   const statText=w=>`Magazin ${w.mag} · Schaden ${w.dmg}${w.pellets>1?'×'+w.pellets:''} · ${w.auto?'Dauerfeuer':'Einzelfeuer'} · Nachladen ${w.reload} s`;
   const participants=()=>{const bt=BATTLES[CFG.battle];return bt?bt.att.concat(bt.def):Object.keys(COUNTRIES)};
+  const roleList=m=>m==='air'?['pilot']:m==='flak'?['gunner']:['rifle','sniper','mg','flame','smoke','at','pioneer','tank'];
+  const eraLimit=()=>{const bt=BATTLES[CFG.battle];return bt?bt.year:1945};
+  const tanksFor=()=>{const l=TANKLIST[CFG.country].filter(t=>t.year<=eraLimit());return l.length?l:[TANKLIST[CFG.country][0]]};
+  const planesFor=()=>{const l=PLANELIST[CFG.country].filter(t=>t.year<=eraLimit());return l.length?l:[PLANELIST[CFG.country][0]]};
+  const primFor=()=>{const co=COUNTRIES[CFG.country],r=ROLES[CFG.role]||ROLES.rifle;const l=co.primaries.filter(id=>r.types.includes(PRIMARIES[id].type));return l.length?l:co.primaries};
+  const specFor=()=>{const co=COUNTRIES[CFG.country],r=ROLES[CFG.role]||ROLES.rifle;if(r.spec==='smoke')return['smoke'];let l=co.specials;if(r.spec==='flame')l=l.filter(i=>SPECIALS[i].kind==='flame');else if(r.spec==='rocket')l=l.filter(i=>SPECIALS[i].kind==='rocket');return l.length?l:co.specials};
   const fix=()=>{const ps=participants();if(!ps.includes(CFG.country)){CFG.country=ps[0];CFG.uniform=0}
-    const co=COUNTRIES[CFG.country];if(!co.uniforms[CFG.uniform])CFG.uniform=0;if(!co.primaries.includes(CFG.primary))CFG.primary=co.primaries[0];if(!co.specials.includes(CFG.special))CFG.special=co.specials[0];
-    const R=resolveBattle(),bo=baseOptsFor(R.mode);if(!bo.some(o=>o[0]===CFG.base))CFG.base=bo[0][0]};
+    const co=COUNTRIES[CFG.country];if(!co.uniforms[CFG.uniform])CFG.uniform=0;
+    const R=resolveBattle(),rl=roleList(R.mode);if(!rl.includes(CFG.role))CFG.role=rl[0];
+    if(!primFor().includes(CFG.primary))CFG.primary=primFor()[0];if(!specFor().includes(CFG.special))CFG.special=specFor()[0];
+    if(!tanksFor().some(t=>t.id===CFG.tank))CFG.tank=tanksFor()[0].id;if(!planesFor().some(t=>t.id===CFG.plane))CFG.plane=planesFor()[0].id;
+    const bo=baseOptsFor(R.mode,R.battle);if(!bo.some(o=>o[0]===CFG.base))CFG.base=bo[0][0]};
   const fill=(id,list,isOn,label,pick)=>{const bx=document.getElementById(id);bx.innerHTML='';
     list.forEach(k=>{const b=document.createElement('button');b.className='chip'+(isOn(k)?' on':'');b.innerHTML=label(k);b.addEventListener('click',()=>{pick(k);render()});bx.appendChild(b)})};
-  const TITLES=['','1 · SCHLACHT WÄHLEN','2 · LAND WÄHLEN','3 · UNIFORM UND WAFFEN','4 · STÜTZPUNKT WÄHLEN'];
-  function render(){fix();const co=COUNTRIES[CFG.country],bt=BATTLES[CFG.battle],R=resolveBattle();
+  const TITLES=['','1 · SCHLACHT WÄHLEN','2 · LAND WÄHLEN','3 · ROLLE WÄHLEN','4 · UNIFORM UND WAFFEN','5 · STÜTZPUNKT WÄHLEN'];
+  const vehInfo=(v,air)=>air?v.name+' ('+v.year+'): '+v.hp+' Leben, Tempo ×'+v.spd+', Wendigkeit ×'+v.turn:v.name+' (ab '+v.year+'): '+v.hp+' Leben, Tempo '+v.speed+', Nachladen '+v.cd+' s, Granatenschaden '+v.dmg;
+  function render(){fix();const co=COUNTRIES[CFG.country],bt=BATTLES[CFG.battle],R=resolveBattle(),air=R.mode==='air',needVeh=air||CFG.role==='tank';
     fill('cBattle',['free'].concat(Object.keys(BATTLES)),k=>k===CFG.battle,k=>k==='free'?'Freier Einsatz<small>eigene Wahl</small>':BATTLES[k].short+'<small>'+BATTLES[k].date+'</small>',k=>{CFG.battle=k;
       info.textContent=k==='free'?'Freier Einsatz: Land, Einsatzart und Schauplatz frei kombinieren.':BATTLES[k].name+' ('+BATTLES[k].date+'): '+BATTLES[k].desc+' Teilnehmer: '+BATTLES[k].att.concat(BATTLES[k].def).map(c=>COUNTRIES[c].name).join(', ')+'.'});
-    fill('cLand',participants(),k=>k===CFG.country,k=>COUNTRIES[k].name+(bt?'<small>'+(bt.att.includes(k)?'Angreifer':'Verteidiger')+'</small>':''),k=>{CFG.country=k;CFG.uniform=0;CFG.primary=COUNTRIES[k].primaries[0];CFG.special=COUNTRIES[k].specials[0];
+    fill('cLand',participants(),k=>k===CFG.country,k=>COUNTRIES[k].name+(bt?'<small>'+(bt.att.includes(k)?'Angreifer':'Verteidiger')+'</small>':''),k=>{CFG.country=k;CFG.uniform=0;
       const v=VEHICLES[k],r2=resolveBattle();info.textContent=COUNTRIES[k].name+(r2.goal?' ('+r2.role+'): '+r2.goal+'. ':' – ')+'Panzer: '+v.tank.name+' · Jagdflugzeug: '+v.plane.name+' · Handgranate: '+COUNTRIES[k].grenade+'.'});
     fill('cMode',Object.keys(MODES),k=>k===CFG.mode,k=>MODES[k].name,k=>{CFG.mode=k;info.textContent=MODES[k].name+': '+MODES[k].desc});
     fill('cTheme',Object.keys(THEMES),k=>k===CFG.theme,k=>THEMES[k].name,k=>{CFG.theme=k;info.textContent=THEMES[k].name+': '+THEMES[k].desc});
+    fill('cRole',roleList(R.mode),k=>k===CFG.role,k=>ROLES[k].name,k=>{CFG.role=k;info.textContent=ROLES[k].name+': '+ROLES[k].desc});
+    document.getElementById('cVeh').previousElementSibling.textContent=air?'FLUGZEUG':'PANZER';
+    if(air)fill('cVeh',planesFor().map(t=>t.id),k=>k===CFG.plane,k=>{const v=planesFor().find(t=>t.id===k);return v.name+'<small>'+v.year+'</small>'},k=>{CFG.plane=k;info.textContent=vehInfo(planesFor().find(t=>t.id===k),true)});
+    else fill('cVeh',tanksFor().map(t=>t.id),k=>k===CFG.tank,k=>{const v=tanksFor().find(t=>t.id===k);return v.name+'<small>ab '+v.year+'</small>'},k=>{CFG.tank=k;info.textContent=vehInfo(tanksFor().find(t=>t.id===k),false)});
     fill('cUni',co.uniforms.map((u,i)=>i),i=>i===CFG.uniform,i=>co.uniforms[i].name,i=>{CFG.uniform=i;info.textContent='Uniform: '+co.uniforms[i].name});
-    fill('cPrim',co.primaries,k=>k===CFG.primary,k=>PRIMARIES[k].name,k=>{CFG.primary=k;info.textContent=PRIMARIES[k].name+': '+PRIMARIES[k].desc+' ('+statText(PRIMARIES[k])+')'});
-    fill('cSpec',co.specials,k=>k===CFG.special,k=>SPECIALS[k].name,k=>{CFG.special=k;info.textContent=SPECIALS[k].name+': '+SPECIALS[k].desc});
-    const bo=baseOptsFor(R.mode);fill('cBase',bo.map(o=>o[0]),k=>k===CFG.base,k=>bo.find(o=>o[0]===k)[1],k=>{CFG.base=k;info.textContent=bo.find(o=>o[0]===k)[1]+': '+bo.find(o=>o[0]===k)[2]});
-    for(const g of box.querySelectorAll('.grp')){const sd=g.dataset.s;g.style.display=(sd===String(step)||(sd==='2f'&&step===2&&CFG.battle==='free'))?'':'none'}
+    fill('cPrim',primFor(),k=>k===CFG.primary,k=>PRIMARIES[k].name,k=>{CFG.primary=k;info.textContent=PRIMARIES[k].name+': '+PRIMARIES[k].desc+' ('+statText(PRIMARIES[k])+')'});
+    fill('cSpec',specFor(),k=>k===CFG.special,k=>SPECIALS[k].name,k=>{CFG.special=k;info.textContent=SPECIALS[k].name+': '+SPECIALS[k].desc});
+    const bo=baseOptsFor(R.mode,R.battle);fill('cBase',bo.map(o=>o[0]),k=>k===CFG.base,k=>bo.find(o=>o[0]===k)[1],k=>{CFG.base=k;info.textContent=bo.find(o=>o[0]===k)[1]+': '+bo.find(o=>o[0]===k)[2]});
+    for(const g of box.querySelectorAll('.grp')){const sd=g.dataset.s;g.style.display=(sd===String(step)||(sd==='2f'&&step===2&&CFG.battle==='free')||(sd==='3v'&&step===3&&needVeh))?'':'none'}
     document.querySelector('#setup h2').textContent=TITLES[step];
-    document.getElementById('backBtn').style.display=step>1?'':'none';document.getElementById('nextBtn').style.display=step<4?'':'none';document.getElementById('startBtn').style.display=step===4?'':'none';
-    if(step===4&&!info.dataset.sum){info.textContent=(R.battleName?R.battleName+' – ':'')+COUNTRIES[CFG.country].name+' ('+co.uniforms[CFG.uniform].name+') · '+PRIMARIES[CFG.primary].name+' · '+SPECIALS[CFG.special].name+(R.goal?'. Auftrag: '+R.goal+'.':'.')}}
-  document.getElementById('nextBtn').addEventListener('click',()=>{step=Math.min(4,step+1);info.dataset.sum='';info.textContent='';render();document.getElementById('setup').scrollTop=0});
+    document.getElementById('backBtn').style.display=step>1?'':'none';document.getElementById('nextBtn').style.display=step<5?'':'none';document.getElementById('startBtn').style.display=step===5?'':'none';
+    if(step===5&&!info.dataset.sum){info.textContent=(R.battleName?R.battleName+' – ':'')+co.name+' ('+co.uniforms[CFG.uniform].name+') · '+ROLES[CFG.role].name+(needVeh?' ('+(air?chosenPlane().name:chosenTank().name)+')':'')+' · '+PRIMARIES[CFG.primary].name+' · '+SPECIALS[CFG.special].name+(R.goal?'. Auftrag: '+R.goal+'.':'.')}}
+  document.getElementById('nextBtn').addEventListener('click',()=>{step=Math.min(5,step+1);info.dataset.sum='';info.textContent='';render();document.getElementById('setup').scrollTop=0});
   document.getElementById('backBtn').addEventListener('click',()=>{step=Math.max(1,step-1);info.dataset.sum='';info.textContent='';render()});
   let best=0;try{best=parseInt(localStorage.getItem('blockfront-best')||'0')}catch(e){}
-  render();info.textContent=(LEVEL>1?'LEVEL '+LEVEL+' wartet – ':'')+(best?'Rekord: Level '+best+'. ':'')+'Wähle eine berühmte Schlacht oder den freien Einsatz – danach Land, Uniform, Waffen und Stützpunkt.';
+  render();info.textContent=(LEVEL>1?'LEVEL '+LEVEL+' wartet – ':'')+(best?'Rekord: Level '+best+'. ':'')+'Wähle eine berühmte Schlacht oder den freien Einsatz – danach Land, Rolle, Uniform, Waffen und Stützpunkt.';
   document.getElementById('startBtn').addEventListener('click',()=>{
     try{localStorage.setItem('blockfront-cfg',JSON.stringify(CFG))}catch(e){}
     document.getElementById('setup').classList.add('hidden');loadEl.classList.remove('hidden');boot()});
