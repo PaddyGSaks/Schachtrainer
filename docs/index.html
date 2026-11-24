@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14161a">
+<title>Gitarrenstimmer</title>
+<style>
+  :root {
+    --bg: #14161a; --panel: #1d2026; --line: #2c313a; --text: #eceff4; --muted: #8b93a1;
+    --ok: #3ddc84; --warn: #ffb020; --bad: #ff5a5f; --accent: #5aa9ff;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f3f4f7; --panel: #fff; --line: #d9dde4; --text: #1b1e24; --muted: #667085; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex; justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  }
+  main { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 16px; }
+  h1 { font-size: 1.1rem; margin: 0; font-weight: 600; letter-spacing: .02em; }
+  header { display: flex; justify-content: space-between; align-items: center; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px; }
+  button, select {
+    font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 14px; cursor: pointer;
+  }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #05213f; font-weight: 600; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .row > * { flex: 1; }
+
+  .display { text-align: center; }
+  .note { font-size: 4.5rem; font-weight: 700; line-height: 1; transition: color .15s; }
+  .note small { font-size: 1.6rem; font-weight: 500; color: var(--muted); }
+  .freq { color: var(--muted); font-variant-numeric: tabular-nums; min-height: 1.4em; }
+  svg.gauge { width: 100%; height: auto; display: block; margin: 4px 0; }
+  .needle { transform-origin: 150px 150px; transition: transform .12s linear, stroke .15s; }
+  .hint { font-size: 1.15rem; font-weight: 600; min-height: 1.6em; transition: color .15s; }
+  .state-ok { color: var(--ok); } .state-warn { color: var(--warn); } .state-bad { color: var(--bad); }
+
+  .strings { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+  .strings button { padding: 12px 0; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 700; font-size: 1.2rem; }
+  .strings button span { font-size: .7rem; font-weight: 400; color: var(--muted); }
+  .strings button.target { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent) inset; }
+  .strings button.done { background: color-mix(in srgb, var(--ok) 22%, var(--panel)); border-color: var(--ok); }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: .8rem; color: var(--muted); }
+  .msg { color: var(--muted); font-size: .9rem; text-align: center; margin: 8px 0; }
+  .msg.error { color: var(--bad); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>🎸 Gitarrenstimmer</h1>
+    <button id="toggle" class="primary">Mikrofon starten</button>
+  </header>
+
+  <section class="card display" aria-live="polite">
+    <div class="note" id="note">–</div>
+    <div class="freq" id="freq">&nbsp;</div>
+    <svg class="gauge" viewBox="0 0 300 170" role="img" aria-label="Abweichung in Cent">
+      <path d="M 30 150 A 120 120 0 0 1 270 150" fill="none" stroke="var(--line)" stroke-width="10" stroke-linecap="round"/>
+      <path id="okzone" fill="none" stroke="var(--ok)" stroke-width="10" opacity=".55"/>
+      <g id="ticks" stroke="var(--muted)" stroke-width="2"></g>
+      <g font-size="12" fill="var(--muted)" text-anchor="middle">
+        <text x="30" y="168">♭</text><text x="150" y="22">0</text><text x="270" y="168">♯</text>
+      </g>
+      <line id="needle" class="needle" x1="150" y1="150" x2="150" y2="42" stroke="var(--muted)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="150" cy="150" r="8" fill="var(--text)"/>
+    </svg>
+    <div class="hint" id="hint">Spiele eine Saite an</div>
+  </section>
+
+  <section class="card">
+    <div class="strings" id="strings"></div>
+    <p class="msg" id="stringMsg"></p>
+    <div class="row">
+      <button id="auto">Automatisch</button>
+      <button id="play">▶ Referenzton</button>
+    </div>
+  </section>
+
+  <section class="card row">
+    <label>Stimmung
+      <select id="tuning"></select>
+    </label>
+    <label>Kammerton A4
+      <select id="a4"></select>
+    </label>
+  </section>
+
+  <p class="msg" id="status">Tippe auf „Mikrofon starten“ und zupfe eine Saite.</p>
+</main>
+
+<script src="pitch.js"></script>
+<script>
+'use strict';
+const NAMES = ['C','C♯','D','E♭','E','F','F♯','G','A♭','A','B','H'];
+const noteLabel = m => NAMES[((m % 12) + 12) % 12];
+const noteOct = m => Math.floor(m / 12) - 1;
+
+// Saiten von tief nach hoch als MIDI-Nummern
+const TUNINGS = {
+  'Standard (E A D G H E)': [40, 45, 50, 55, 59, 64],
+  'Drop D (D A D G H E)':   [38, 45, 50, 55, 59, 64],
+  'Halbton tiefer':         [39, 44, 49, 54, 58, 63],
+  'Ganzton tiefer':         [38, 43, 48, 53, 57, 62],
+  'Open G (D G D G H D)':   [38, 43, 50, 55, 59, 62],
+  'DADGAD':                 [38, 45, 50, 55, 57, 62],
+};
+
+const $ = id => document.getElementById(id);
+const state = {
+  tuning: Object.keys(TUNINGS)[0], a4: 440, manual: null,
+  ctx: null, analyser: null, stream: null, buf: null, running: false,
+  recent: [], lastSeen: 0, done: new Set(), okSince: 0,
+};
+
+const midiFreq = m => state.a4 * Math.pow(2, (m - 69) / 12);
+const strings = () => TUNINGS[state.tuning];
+
+// ---------- UI aufbauen ----------
+for (const k of Object.keys(TUNINGS)) $('tuning').add(new Option(k, k));
+for (let f = 430; f <= 450; f++) $('a4').add(new Option(f + ' Hz', f, f === 440, f === 440));
+
+(function drawGauge() {
+  const cx = 150, cy = 150;
+  const pt = (deg, r) => [cx + r * Math.sin(deg * Math.PI / 180), cy - r * Math.cos(deg * Math.PI / 180)];
+  let t = '';
+  for (let c = -50; c <= 50; c += 10) {
+    const a = c * 0.9, major = c % 50 === 0 || c === 0;
+    const [x1, y1] = pt(a, major ? 98 : 104), [x2, y2] = pt(a, 112);
+    t += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  }
+  $('ticks').innerHTML = t;
+  const [a1, b1] = pt(-5 * .9, 120), [a2, b2] = pt(5 * .9, 120);
+  $('okzone').setAttribute('d', `M ${a1} ${b1} A 120 120 0 0 1 ${a2} ${b2}`);
+})();
+
+function buildStrings() {
+  const box = $('strings'); box.innerHTML = '';
+  strings().forEach((m, i) => {
+    const b = document.createElement('button');
+    b.innerHTML = `${noteLabel(m)}<span>${strings().length - i}. Saite</span>`;
+    b.onclick = () => { state.manual = state.manual === i ? null : i; refreshStrings(); };
+    box.appendChild(b);
+  });
+  state.done.clear(); state.manual = null;
+  refreshStrings();
+}
+function refreshStrings(autoIdx) {
+  [...$('strings').children].forEach((b, i) => {
+    b.classList.toggle('target', state.manual === i || (state.manual === null && autoIdx === i));
+    b.classList.toggle('done', state.done.has(i));
+  });
+  const m = strings()[state.manual];
+  $('stringMsg').textContent = state.manual === null
+    ? 'Automatische Saitenerkennung. Tippe eine Saite, um sie festzulegen.'
+    : `Festgelegt: ${noteLabel(m)}${noteOct(m)} – nochmal tippen für automatisch.`;
+  $('auto').style.opacity = state.manual === null ? .5 : 1;
+}
+
+$('tuning').onchange = e => { state.tuning = e.target.value; buildStrings(); };
+$('a4').onchange = e => { state.a4 = +e.target.value; };
+$('auto').onclick = () => { state.manual = null; refreshStrings(); };
+
+// ---------- Anzeige ----------
+function show(m, freq, cents, autoIdx) {
+  const abs = Math.abs(cents);
+  const cls = abs <= 5 ? 'ok' : abs <= 15 ? 'warn' : 'bad';
+  const color = `var(--${cls})`;
+  $('note').innerHTML = `${noteLabel(m)}<small>${noteOct(m)}</small>`;
+  $('note').style.color = color;
+  $('freq').textContent = `${freq.toFixed(1)} Hz · ${cents > 0 ? '+' : ''}${cents.toFixed(0)} Cent`;
+  const needle = $('needle');
+  needle.style.transform = `rotate(${Math.max(-50, Math.min(50, cents)) * 0.9}deg)`;
+  needle.setAttribute('stroke', color);
+  const hint = $('hint');
+  hint.className = 'hint state-' + cls;
+  hint.textContent = abs <= 5 ? '✓ Gestimmt' : cents < 0 ? '↑ Zu tief – Saite anziehen' : '↓ Zu hoch – Saite lockern';
+  refreshStrings(autoIdx);
+}
+function idle() {
+  $('note').innerHTML = '–'; $('note').style.color = '';
+  $('freq').innerHTML = '&nbsp;';
+  $('needle').style.transform = 'rotate(0deg)'; $('needle').setAttribute('stroke', 'var(--muted)');
+  $('hint').className = 'hint'; $('hint').textContent = 'Spiele eine Saite an';
+  refreshStrings();
+}
+
+// ---------- Audio ----------
+function median(a) { const s = [...a].sort((x, y) => x - y); return s[s.length >> 1]; }
+
+function tick() {
+  if (!state.running) return;
+  requestAnimationFrame(tick);
+  state.analyser.getFloatTimeDomainData(state.buf);
+  let rms = 0;
+  for (const v of state.buf) rms += v * v;
+  rms = Math.sqrt(rms / state.buf.length);
+  const now = performance.now();
+  const res = rms > 0.008 ? Pitch.detectPitch(state.buf, state.ctx.sampleRate, { minFreq: 50, maxFreq: 800 }) : null;
+
+  if (res && res.clarity > 0.85) {
+    state.recent.push(res.freq);
+    if (state.recent.length > 5) state.recent.shift();
+    state.lastSeen = now;
+    const freq = median(state.recent);
+    const list = strings();
+    const centsTo = m => 1200 * Math.log2(freq / midiFreq(m));
+    let idx = state.manual;
+    if (idx === null) {
+      idx = 0;
+      list.forEach((m, i) => { if (Math.abs(centsTo(m)) < Math.abs(centsTo(list[idx]))) idx = i; });
+    }
+    const cents = centsTo(list[idx]);
+    if (Math.abs(cents) <= 5) {
+      if (!state.okSince) state.okSince = now;
+      else if (now - state.okSince > 600) state.done.add(idx);
+    } else state.okSince = 0;
+    show(list[idx], freq, cents, state.manual === null ? idx : undefined);
+  } else if (now - state.lastSeen > 700) {
+    state.recent = []; state.okSince = 0; idle();
+  }
+}
+
+async function start() {
+  try {
+    state.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false },
+    });
+  } catch (e) {
+    setStatus(e && e.name === 'NotAllowedError'
+      ? 'Mikrofonzugriff verweigert. Bitte in den Browser-Einstellungen erlauben.'
+      : 'Kein Mikrofon verfügbar oder Seite nicht per HTTPS/localhost geöffnet.', true);
+    return;
+  }
+  state.ctx = state.ctx || new (window.AudioContext || window.webkitAudioContext)();
+  await state.ctx.resume();
+  const src = state.ctx.createMediaStreamSource(state.stream);
+  state.analyser = state.ctx.createAnalyser();
+  state.analyser.fftSize = 4096;
+  state.buf = new Float32Array(state.analyser.fftSize);
+  src.connect(state.analyser);
+  state.running = true;
+  $('toggle').textContent = 'Stopp';
+  setStatus('Höre zu … zupfe eine Saite an und lass sie ausklingen.');
+  requestAnimationFrame(tick);
+}
+function stop() {
+  state.running = false;
+  state.stream && state.stream.getTracks().forEach(t => t.stop());
+  $('toggle').textContent = 'Mikrofon starten';
+  setStatus('Gestoppt.'); idle();
+}
+$('toggle').onclick = () => state.running ? stop() : start();
+function setStatus(t, err) { $('status').textContent = t; $('status').classList.toggle('error', !!err); }
+
+// Referenzton der gewählten Saite (ohne Auswahl: tiefste Saite)
+$('play').onclick = async () => {
+  state.ctx = state.ctx || new (window.AudioContext || window.webkitAudioContext)();
+  await state.ctx.resume();
+  const f = midiFreq(strings()[state.manual === null ? 0 : state.manual]);
+  const t0 = state.ctx.currentTime, g = state.ctx.createGain();
+  g.gain.setValueAtTime(0, t0);
+  g.gain.linearRampToValueAtTime(0.35, t0 + 0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + 2.5);
+  g.connect(state.ctx.destination);
+  [[1, 1], [2, .3], [3, .12]].forEach(([h, a]) => {
+    const o = state.ctx.createOscillator(), og = state.ctx.createGain();
+    o.type = 'sine'; o.frequency.value = f * h; og.gain.value = a;
+    o.connect(og); og.connect(g); o.start(t0); o.stop(t0 + 2.6);
+  });
+  if (state.manual === null) setStatus('Tipp: Tippe zuerst eine Saite an. Ohne Auswahl spielt der Referenzton die tiefste Saite.');
+};
+
+buildStrings();
+</script>
+</body>
+</html>
